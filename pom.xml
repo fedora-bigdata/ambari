@@ -169,10 +169,20 @@
       </activation>
       <modules>
          <module>ambari-web</module>
+         <module>ambari-project</module>
+         <module>ambari-server</module>
+         <module>ambari-agent</module>
+         <module>ambari-client</module>
       </modules>
     </profile>
     <profile>
-       <id>static-web</id>
+      <id>static-web</id>
+      <modules>
+         <module>ambari-project</module>
+         <module>ambari-server</module>
+         <module>ambari-agent</module>
+         <module>ambari-client</module>
+      </modules>
     </profile>
     <profile>
       <id>clover</id>
