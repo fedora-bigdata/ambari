@@ -592,11 +592,6 @@
       <artifactId>spring-security-web</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-mock</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-ldap</artifactId>
     </dependency>
@@ -764,12 +759,6 @@
     <dependency>
       <groupId>org.powermock</groupId>
       <artifactId>powermock-reflect</artifactId>
-      <version>1.5</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.powermock</groupId>
-      <artifactId>powermock-api-easymock</artifactId>
       <version>1.5</version>
       <scope>test</scope>
     </dependency>
