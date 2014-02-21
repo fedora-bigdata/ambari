@@ -37,7 +37,7 @@
     <package.log.dir>/var/log/ambari-client</package.log.dir>
     <package.pid.dir>/var/run/ambari-client</package.pid.dir>
     <skipTests>false</skipTests>
-    <install.dir>/usr/lib/python2.6/site-packages/ambari_client</install.dir>
+    <install.dir>/usr/lib/python2.7/site-packages/ambari_client</install.dir>
     <lib.dir>/usr/lib/ambari-client/lib</lib.dir>
     <python.ver>python &gt;= 2.6</python.ver>
   </properties>
@@ -72,7 +72,7 @@
         <executions>
           <execution>
             <configuration>
-              <executable>python2.6</executable>
+              <executable>python</executable>
               <workingDirectory>src/test/python</workingDirectory>
               <arguments>
                 <argument>unitTests.py</argument>
@@ -90,7 +90,7 @@
           </execution>
           <execution>
             <configuration>
-              <executable>python2.6</executable>
+              <executable>python</executable>
               <workingDirectory>target/ambari-client-${project.version}</workingDirectory>
               <arguments>
                 <argument>${project.basedir}/src/main/python/setup.py</argument>

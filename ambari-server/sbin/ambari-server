@@ -38,8 +38,8 @@ esac
 export PATH=/usr/lib/ambari-server/*:$PATH
 export AMBARI_CONF_DIR=/etc/ambari-server/conf:$PATH
 
-if [ -a /usr/bin/python2.6 ]; then
-  PYTHON=/usr/bin/python2.6
+if [ -a /usr/bin/python ]; then
+  PYTHON=/usr/bin/python
 fi
 
 if [ -a /var/lib/ambari-server/ambari-env.sh ]; then

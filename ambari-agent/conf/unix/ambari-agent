@@ -37,20 +37,19 @@ export PATH=/usr/lib/ambari-server/*:$PATH
 export AMBARI_CONF_DIR=/etc/ambari-server/conf:$PATH
 
 # Because Ambari rpm unpacks modules here on all systems
-export PYTHONPATH=/usr/lib/python2.6/site-packages:$PYTHONPATH
+export PYTHONPATH=/usr/lib/python2.7/site-packages:$PYTHONPATH
 
 AMBARI_AGENT=ambari-agent
 PIDFILE=/var/run/ambari-agent/$AMBARI_AGENT.pid
 OUTFILE=/var/log/ambari-agent/ambari-agent.out
 LOGFILE=/var/log/ambari-agent/ambari-agent.log
-AGENT_SCRIPT=/usr/lib/python2.6/site-packages/ambari_agent/main.py
-AMBARI_AGENT_PY_SCRIPT=/usr/lib/python2.6/site-packages/ambari_agent/AmbariAgent.py
+AGENT_SCRIPT=/usr/sbin/ambari-agent.py
 OK=1
 NOTOK=0
 
 
-if [ -a /usr/bin/python2.6 ]; then
-  PYTHON=/usr/bin/python2.6
+if [ -a /usr/bin/python ]; then
+  PYTHON=/usr/bin/python
 fi
 
 if [ "x$PYTHON" == "x" ]; then
@@ -128,7 +127,7 @@ case "$1" in
           fi
         fi
         echo "Starting ambari-agent"
-        nohup $PYTHON $AMBARI_AGENT_PY_SCRIPT "$@" > $OUTFILE 2>&1 &
+        nohup $AGENT_SCRIPT "$@" > $OUTFILE 2>&1 &
         sleep 2
         PID=$!
         echo "Verifying $AMBARI_AGENT process status..."
@@ -189,7 +188,7 @@ case "$1" in
             tput sgr0
           else
             echo "Stopping $AMBARI_AGENT"
-            $PYTHON $AGENT_SCRIPT stop
+            $AGENT_SCRIPT stop
           fi
           echo "Removing PID file at $PIDFILE"
           rm -f $PIDFILE

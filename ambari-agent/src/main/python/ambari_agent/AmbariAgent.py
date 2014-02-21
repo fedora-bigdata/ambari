@@ -23,7 +23,7 @@ import sys
 import subprocess
 from Controller import AGENT_AUTO_RESTART_EXIT_CODE
 
-AGENT_SCRIPT = "/usr/lib/python2.6/site-packages/ambari_agent/main.py"
+AGENT_SCRIPT = "/usr/lib/python2.7/site-packages/ambari_agent/main.py"
 AGENT_PID_FILE = "/var/run/ambari-agent/ambari-agent.pid"
 # AGENT_AUTO_RESTART_EXIT_CODE = 77 is exit code which we return when restart_agent() is called
 status = AGENT_AUTO_RESTART_EXIT_CODE
