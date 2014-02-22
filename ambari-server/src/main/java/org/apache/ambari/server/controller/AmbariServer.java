@@ -22,8 +22,10 @@ package org.apache.ambari.server.controller;
 import java.io.File;
 import java.net.BindException;
 import java.util.Map;
+import java.util.EnumSet;
 
 import javax.crypto.BadPaddingException;
+import javax.servlet.DispatcherType;
 
 import org.apache.ambari.eventdb.webservice.WorkflowJsonService;
 import org.apache.ambari.server.AmbariException;
@@ -61,6 +63,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
+import org.eclipse.jetty.server.session.AbstractSessionManager;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -156,7 +159,7 @@ public class AmbariServer {
           ServletContextHandler.SECURITY | ServletContextHandler.SESSIONS);
 
       //Changing session cookie name to avoid conflicts
-      root.getSessionHandler().getSessionManager().setSessionCookie("AMBARISESSIONID");
+      ((AbstractSessionManager)root.getSessionHandler().getSessionManager()).setSessionCookie("AMBARISESSIONID");
 
       GenericWebApplicationContext springWebAppContext = new GenericWebApplicationContext();
       springWebAppContext.setServletContext(root.getServletContext());
@@ -185,13 +188,13 @@ public class AmbariServer {
       springSecurityFilter.setTargetBeanName("springSecurityFilterChain");
 
       //session-per-request strategy for api and agents
-      root.addFilter(new FilterHolder(injector.getInstance(AmbariPersistFilter.class)), "/api/*", 1);
-      agentroot.addFilter(new FilterHolder(injector.getInstance(AmbariPersistFilter.class)), "/agent/*", 1);
+      root.addFilter(new FilterHolder(injector.getInstance(AmbariPersistFilter.class)), "/api/*", EnumSet.of(DispatcherType.REQUEST));
+      agentroot.addFilter(new FilterHolder(injector.getInstance(AmbariPersistFilter.class)), "/agent/*", EnumSet.of(DispatcherType.REQUEST));
 
-      agentroot.addFilter(SecurityFilter.class, "/*", 1);
+      agentroot.addFilter(SecurityFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
 
       if (configs.getApiAuthentication()) {
-        root.addFilter(new FilterHolder(springSecurityFilter), "/api/*", 1);
+        root.addFilter(new FilterHolder(springSecurityFilter), "/api/*", EnumSet.of(DispatcherType.REQUEST));
       }
 
 
