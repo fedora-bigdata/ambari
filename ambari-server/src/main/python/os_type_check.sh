@@ -46,6 +46,8 @@ then
   grep -sqiE "^centos ${pattern}6" /etc/redhat-release && current_os=$C6
   grep -sqE "^Red Hat Enterprise Linux ${pattern}6" /etc/redhat-release && current_os=$RH6
   grep -sqE "^Red Hat Enterprise Linux ${pattern}5" /etc/redhat-release && current_os=$RH5
+  # fedora compatability for now mapped to RHEL6
+  grep -sqE "^Fedora release 2[0-9]" /etc/redhat-release && current_os=$RH6
 elif [ -f  "/etc/SuSE-release" ]
 then
   grep -sqE "${pattern}11" /etc/SuSE-release && current_os=$SUSE11
@@ -75,6 +77,9 @@ case "$cluster_os" in
     res=1
   ;;
 esac
+
+# TODO: revisit when we have a plan for fedora cluster/agent/stack alignment
+[[ "$cluster_os" =~ "fedora" ]] && echo "Fedora 20+/RHEL6 compat permitted" && res=0
 
 [[ $res -ne 0 ]] && echo "Local OS is not compatible with cluster primary OS. Please perform manual bootstrap on this host."
 

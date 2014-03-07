@@ -156,7 +156,7 @@ class hdp::params()
     }
 
     default: {
-      hdp_fail("No support for os $::operatingsystem  ${hdp_os} ${hdp_os_version}")
+      $hdp_os_type = "redhat6"
     }
   }
 
