@@ -22,9 +22,9 @@ class hdp-hue(
   $service_state = undef
 )
 {
-  include $hdp-hue::params
+  include $hdp_hue::params
 
-  $hue_user = $hdp-hue::params::hue_server_user
+  $hue_user = $hdp_hue::params::hue_server_user
   $hue_conf_dir = $hdp::params::hue_conf_dir
 
   if ($service_state == 'uninstalled') {
@@ -57,7 +57,7 @@ class hdp-hue(
     # Configs generation
     if has_key($configuration, 'hue-site') {
       hdp-hue::generate_config_file { 'hue-ini':
-        config_file_path => $hdp-hue::params::hue_conf_file
+        config_file_path => $hdp_hue::params::hue_conf_file
       }
     }
 
@@ -77,7 +77,7 @@ define hdp-hue::generate_config_file(
     file { $config_file_path :
       ensure => file,
       content => template('hdp-hue/hue-ini.cfg.erb'),
-      owner => $hdp-hue::params::hue_server_user
+      owner => $hdp_hue::params::hue_server_user
     }
   }
 }

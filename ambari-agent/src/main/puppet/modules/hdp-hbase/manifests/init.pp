@@ -24,8 +24,8 @@ class hdp-hbase(
 {
   include hdp-hbase::params
  
-  $hbase_user = $hdp-hbase::params::hbase_user
-  $config_dir = $hdp-hbase::params::conf_dir
+  $hbase_user = $hdp_hbase::params::hbase_user
+  $config_dir = $hdp_hbase::params::conf_dir
   
   $hdp::params::component_exists['hdp-hbase'] = true
   $smokeuser = $hdp::params::smokeuser
@@ -35,7 +35,7 @@ class hdp-hbase(
 
   if has_key($configuration, 'hbase-site') {
     configgenerator::configfile{'hbase-site': 
-      modulespath => $hdp-hbase::params::conf_dir,
+      modulespath => $hdp_hbase::params::conf_dir,
       filename => 'hbase-site.xml',
       module => 'hdp-hbase',
       configuration => $configuration['hbase-site'],
@@ -51,7 +51,7 @@ class hdp-hbase(
 
   if has_key($configuration, 'hdfs-site') {
     configgenerator::configfile{'hdfs-site':
-      modulespath => $hdp-hbase::params::conf_dir,
+      modulespath => $hdp_hbase::params::conf_dir,
       filename => 'hdfs-site.xml',
       module => 'hdp-hbase',
       configuration => $configuration['hdfs-site'],
@@ -67,7 +67,7 @@ class hdp-hbase(
 
   if has_key($configuration, 'hbase-policy') {
     configgenerator::configfile{'hbase-policy': 
-      modulespath => $hdp-hbase::params::conf_dir,
+      modulespath => $hdp_hbase::params::conf_dir,
       filename => 'hbase-policy.xml',
       module => 'hdp-hbase',
       configuration => $configuration['hbase-policy'],
@@ -106,7 +106,7 @@ class hdp-hbase(
       override_owner => true
     }
 
-   hdp-hbase::configfile { ['hbase-env.sh',  $hdp-hbase::params::metric-prop-file-name ]: 
+   hdp-hbase::configfile { ['hbase-env.sh',  $hdp_hbase::params::metric-prop-file-name ]: 
       type => $type
     }
 
@@ -132,10 +132,10 @@ define hdp-hbase::configfile(
   $hbase_master_hosts = undef,
   $template_tag = undef,
   $type = undef,
-  $conf_dir = $hdp-hbase::params::conf_dir
+  $conf_dir = $hdp_hbase::params::conf_dir
 ) 
 {
-  if ($name == $hdp-hbase::params::metric-prop-file-name) {
+  if ($name == $hdp_hbase::params::metric-prop-file-name) {
     if ($type == 'master') {
       $tag = GANGLIA-MASTER
     } else {
@@ -147,7 +147,7 @@ define hdp-hbase::configfile(
 
   hdp::configfile { "${conf_dir}/${name}":
     component         => 'hbase',
-    owner             => $hdp-hbase::params::hbase_user,
+    owner             => $hdp_hbase::params::hbase_user,
     mode              => $mode,
     hbase_master_hosts => $hbase_master_hosts,
     template_tag      => $tag

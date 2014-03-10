@@ -36,7 +36,7 @@ class hdp-hive::server(
         masterhost => $masterHost,
         keytabdst => "${$keytab_path}/hive.service.keytab",
         keytabfile => 'hive.service.keytab',
-        owner => $hdp-hive::params::hive_user
+        owner => $hdp_hive::params::hive_user
       }
     }
 

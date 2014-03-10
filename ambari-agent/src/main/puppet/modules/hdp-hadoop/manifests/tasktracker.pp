@@ -37,7 +37,7 @@ class hdp-hadoop::tasktracker(
 
   if ($service_state == 'no_op') {
   } elsif ($service_state in ['running','stopped','installed_and_configured','uninstalled']) { 
-    $mapred_local_dir = $hdp-hadoop::params::mapred_local_dir
+    $mapred_local_dir = $hdp_hadoop::params::mapred_local_dir
   
     #adds package, users and directories, and common hadoop configs
     include hdp-hadoop::initialize
@@ -49,7 +49,7 @@ class hdp-hadoop::tasktracker(
         masterhost => $masterHost,
         keytabdst => "${$keytab_path}/tt.service.keytab",
         keytabfile => 'tt.service.keytab',
-        owner => $hdp-hadoop::params::mapred_user
+        owner => $hdp_hadoop::params::mapred_user
       }
     }
 
@@ -67,7 +67,7 @@ class hdp-hadoop::tasktracker(
 
     hdp-hadoop::service{ 'tasktracker':
       ensure => $service_state,
-      user   => $hdp-hadoop::params::mapred_user,
+      user   => $hdp_hadoop::params::mapred_user,
       create_pid_dir => $create_pid_dir,
       create_log_dir => $create_log_dir
     }
@@ -85,7 +85,7 @@ define hdp-hadoop::tasktracker::create_local_dirs($service_state)
   if ($hdp::params::service_exists['hdp-hadoop::jobtracker'] != true) {
     $dirs = hdp_array_from_comma_list($name)
     hdp::directory_recursive_create_ignore_failure { $dirs :
-      owner => $hdp-hadoop::params::mapred_user,
+      owner => $hdp_hadoop::params::mapred_user,
       mode => '0755',
       service_state => $service_state,
       force => true

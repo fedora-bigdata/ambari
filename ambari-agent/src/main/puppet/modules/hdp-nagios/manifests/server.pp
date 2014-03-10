@@ -22,14 +22,14 @@ class hdp-nagios::server(
   $service_state = $hdp::params::cluster_service_state
 ) inherits hdp-nagios::params
 {
-  $nagios_var_dir = $hdp-nagios::params::nagios_var_dir
-  $nagios_rw_dir = $hdp-nagios::params::nagios_rw_dir
-  $nagios_config_dir = $hdp-nagios::params::conf_dir
-  $plugins_dir = $hdp-nagios::params::plugins_dir
-  $nagios_obj_dir = $hdp-nagios::params::nagios_obj_dir
-  $check_result_path = $hdp-nagios::params::check_result_path
-  $nagios_httpd_config_file = $hdp-nagios::params::httpd_conf_file
-  $pid_file = $hdp-nagios::params::nagios_pid_file
+  $nagios_var_dir = $hdp_nagios::params::nagios_var_dir
+  $nagios_rw_dir = $hdp_nagios::params::nagios_rw_dir
+  $nagios_config_dir = $hdp_nagios::params::conf_dir
+  $plugins_dir = $hdp_nagios::params::plugins_dir
+  $nagios_obj_dir = $hdp_nagios::params::nagios_obj_dir
+  $check_result_path = $hdp_nagios::params::check_result_path
+  $nagios_httpd_config_file = $hdp_nagios::params::httpd_conf_file
+  $pid_file = $hdp_nagios::params::nagios_pid_file
 
   if hdp_is_empty($hdp::params::pathes[nagios_p1_pl]) {
     hdp_fail("There is no path to p1.pl file for nagios")
@@ -220,7 +220,7 @@ class hdp-nagios::server(
 
 class hdp-nagios::server::web_permisssions()
 {
-  $web_login = $hdp-nagios::params::nagios_web_login
+  $web_login = $hdp_nagios::params::nagios_web_login
   $htpasswd_cmd_os = $hdp::params::cmds[htpasswd]#[$hdp::params::hdp_os_type]
 
 
@@ -251,15 +251,15 @@ class hdp-nagios::server::web_permisssions()
   }
 
   file { "/etc/nagios/htpasswd.users" :
-    owner => $hdp-nagios::params::nagios_user,
-    group => $hdp-nagios::params::nagios_group,
+    owner => $hdp_nagios::params::nagios_user,
+    group => $hdp_nagios::params::nagios_group,
     mode  => '0640'
   }
 
   if ($hdp::params::hdp_os_type == "suse") {
-    $command = "usermod -G $hdp-nagios::params::nagios_group wwwrun"
+    $command = "usermod -G $hdp_nagios::params::nagios_group wwwrun"
   } else {
-    $command = "usermod -a -G $hdp-nagios::params::nagios_group apache"
+    $command = "usermod -a -G $hdp_nagios::params::nagios_group apache"
   }
 
   hdp::exec { "apache_permissions_htpasswd.users" :
@@ -271,7 +271,7 @@ class hdp-nagios::server::web_permisssions()
 
 class hdp-nagios::server::services($ensure)
 {
-   $pid_file = $hdp-nagios::params::nagios_pid_file
+   $pid_file = $hdp_nagios::params::nagios_pid_file
   
    if ($ensure == 'running') {
      $command = "service nagios start"

@@ -43,64 +43,64 @@ class hdp-hadoop::initialize()
 
   if has_key($configuration, 'mapred-queue-acls') {
     configgenerator::configfile{'mapred-queue-acls': 
-      modulespath => $hdp-hadoop::params::conf_dir,
+      modulespath => $hdp_hadoop::params::conf_dir,
       filename => 'mapred-queue-acls.xml',
       module => 'hdp-hadoop',
       configuration => $configuration['mapred-queue-acls'],
-      owner => $hdp-hadoop::params::mapred_user,
+      owner => $hdp_hadoop::params::mapred_user,
       group => $hdp::params::user_group
     }
   } else { # Manually overriding ownership of file installed by hadoop package
     file { "${hdp-hadoop::params::conf_dir}/mapred-queue-acls.xml":
-      owner => $hdp-hadoop::params::mapred_user,
+      owner => $hdp_hadoop::params::mapred_user,
       group => $hdp::params::user_group
     }
   }
   
   if has_key($configuration, 'hadoop-policy') {
     configgenerator::configfile{'hadoop-policy': 
-      modulespath => $hdp-hadoop::params::conf_dir,
+      modulespath => $hdp_hadoop::params::conf_dir,
       filename => 'hadoop-policy.xml',
       module => 'hdp-hadoop',
       configuration => $configuration['hadoop-policy'],
-      owner => $hdp-hadoop::params::hdfs_user,
+      owner => $hdp_hadoop::params::hdfs_user,
       group => $hdp::params::user_group
     }
   } else { # Manually overriding ownership of file installed by hadoop package
     file { "${hdp-hadoop::params::conf_dir}/hadoop-policy.xml":
-      owner => $hdp-hadoop::params::hdfs_user,
+      owner => $hdp_hadoop::params::hdfs_user,
       group => $hdp::params::user_group
     }
   }
 
   if has_key($configuration, 'core-site') {
       configgenerator::configfile{'core-site': 
-        modulespath => $hdp-hadoop::params::conf_dir,
+        modulespath => $hdp_hadoop::params::conf_dir,
         filename => 'core-site.xml',
         module => 'hdp-hadoop',
         configuration => $configuration['core-site'],
-        owner => $hdp-hadoop::params::hdfs_user,
+        owner => $hdp_hadoop::params::hdfs_user,
         group => $hdp::params::user_group
       }
   } else { # Manually overriding ownership of file installed by hadoop package
     file { "${hdp-hadoop::params::conf_dir}/core-site.xml":
-      owner => $hdp-hadoop::params::hdfs_user,
+      owner => $hdp_hadoop::params::hdfs_user,
       group => $hdp::params::user_group
     }
   }
 
   if has_key($configuration, 'mapred-site') {
     configgenerator::configfile{'mapred-site': 
-      modulespath => $hdp-hadoop::params::conf_dir,
+      modulespath => $hdp_hadoop::params::conf_dir,
       filename => 'mapred-site.xml',
       module => 'hdp-hadoop',
       configuration => $configuration['mapred-site'],
-      owner => $hdp-hadoop::params::mapred_user,
+      owner => $hdp_hadoop::params::mapred_user,
       group => $hdp::params::user_group
     }
   } else { # Manually overriding ownership of file installed by hadoop package
     file { "${hdp-hadoop::params::conf_dir}/mapred-site.xml":
-      owner => $hdp-hadoop::params::mapred_user,
+      owner => $hdp_hadoop::params::mapred_user,
       group => $hdp::params::user_group
     }
   }
@@ -108,7 +108,7 @@ class hdp-hadoop::initialize()
   $task_log4j_properties_location = "${hdp-hadoop::params::conf_dir}/task-log4j.properties"
   
   file { $task_log4j_properties_location:
-    owner   => $hdp-hadoop::params::mapred_user,
+    owner   => $hdp_hadoop::params::mapred_user,
     group   => $hdp::params::user_group,
     mode    => 644,
     ensure  => present,
@@ -118,16 +118,16 @@ class hdp-hadoop::initialize()
 
   if has_key($configuration, 'capacity-scheduler') {
     configgenerator::configfile{'capacity-scheduler':
-      modulespath => $hdp-hadoop::params::conf_dir,
+      modulespath => $hdp_hadoop::params::conf_dir,
       filename => 'capacity-scheduler.xml',
       module => 'hdp-hadoop',
       configuration => $configuration['capacity-scheduler'],
-      owner => $hdp-hadoop::params::hdfs_user,
+      owner => $hdp_hadoop::params::hdfs_user,
       group => $hdp::params::user_group,
     }
   } else { # Manually overriding ownership of file installed by hadoop package
     file { "${hdp-hadoop::params::conf_dir}/capacity-scheduler.xml":
-      owner => $hdp-hadoop::params::hdfs_user,
+      owner => $hdp_hadoop::params::hdfs_user,
       group => $hdp::params::user_group
     }
   } 
@@ -135,16 +135,16 @@ class hdp-hadoop::initialize()
 
   if has_key($configuration, 'hdfs-site') {
     configgenerator::configfile{'hdfs-site': 
-      modulespath => $hdp-hadoop::params::conf_dir,
+      modulespath => $hdp_hadoop::params::conf_dir,
       filename => 'hdfs-site.xml',
       module => 'hdp-hadoop',
       configuration => $configuration['hdfs-site'],
-      owner => $hdp-hadoop::params::hdfs_user,
+      owner => $hdp_hadoop::params::hdfs_user,
       group => $hdp::params::user_group
     }
   } else { # Manually overriding ownership of file installed by hadoop package
     file { "${hdp-hadoop::params::conf_dir}/hdfs-site.xml":
-      owner => $hdp-hadoop::params::hdfs_user,
+      owner => $hdp_hadoop::params::hdfs_user,
       group => $hdp::params::user_group
     }
   }
@@ -164,27 +164,27 @@ class hdp-hadoop::initialize()
   }
 
   file { "${hdp-hadoop::params::conf_dir}/configuration.xsl":
-    owner => $hdp-hadoop::params::hdfs_user,
+    owner => $hdp_hadoop::params::hdfs_user,
     group => $hdp::params::user_group
   }
 
   file { "${hdp-hadoop::params::conf_dir}/fair-scheduler.xml":
-    owner => $hdp-hadoop::params::mapred_user,
+    owner => $hdp_hadoop::params::mapred_user,
     group => $hdp::params::user_group
   }
 
   file { "${hdp-hadoop::params::conf_dir}/masters":
-    owner => $hdp-hadoop::params::hdfs_user,
+    owner => $hdp_hadoop::params::hdfs_user,
     group => $hdp::params::user_group
   }
 
   file { "${hdp-hadoop::params::conf_dir}/ssl-client.xml.example":
-    owner => $hdp-hadoop::params::mapred_user,
+    owner => $hdp_hadoop::params::mapred_user,
     group => $hdp::params::user_group
   }
 
   file { "${hdp-hadoop::params::conf_dir}/ssl-server.xml.example":
-    owner => $hdp-hadoop::params::mapred_user,
+    owner => $hdp_hadoop::params::mapred_user,
     group => $hdp::params::user_group
   }
 
@@ -196,7 +196,7 @@ class hdp-hadoop::initialize()
         $exlude_file_path = $configuration['hdfs-site']['dfs.hosts.exclude']
         file { $exlude_file_path :
         ensure => present,
-        owner => $hdp-hadoop::params::hdfs_user,
+        owner => $hdp_hadoop::params::hdfs_user,
         group => $hdp::params::user_group
         }
       }
@@ -205,7 +205,7 @@ class hdp-hadoop::initialize()
         $include_hosts_list = $hdp::params::slave_hosts
         file { $include_file_path :
         ensure => present,
-        owner => $hdp-hadoop::params::hdfs_user,
+        owner => $hdp_hadoop::params::hdfs_user,
         group => $hdp::params::user_group,
         content => template('hdp-hadoop/include_hosts_list.erb')
         }
@@ -220,10 +220,10 @@ class hdp-hadoop(
 )
 {
   include hdp-hadoop::params
-  $hadoop_config_dir = $hdp-hadoop::params::conf_dir
-  $mapred_user = $hdp-hadoop::params::mapred_user  
-  $hdfs_user = $hdp-hadoop::params::hdfs_user
-  $hadoop_tmp_dir = $hdp-hadoop::params::hadoop_tmp_dir
+  $hadoop_config_dir = $hdp_hadoop::params::conf_dir
+  $mapred_user = $hdp_hadoop::params::mapred_user  
+  $hdfs_user = $hdp_hadoop::params::hdfs_user
+  $hadoop_tmp_dir = $hdp_hadoop::params::hadoop_tmp_dir
 
   anchor{'hdp-hadoop::begin':} 
   anchor{'hdp-hadoop::end':} 
@@ -270,16 +270,16 @@ class hdp-hadoop(
       groups => [$hdp::params::user_group]
     }
 
-    $logdirprefix = $hdp-hadoop::params::hdfs_log_dir_prefix
+    $logdirprefix = $hdp_hadoop::params::hdfs_log_dir_prefix
     hdp::directory_recursive_create { $logdirprefix: 
         owner => 'root'
     }
-    $piddirprefix = $hdp-hadoop::params::hadoop_pid_dir_prefix
+    $piddirprefix = $hdp_hadoop::params::hadoop_pid_dir_prefix
     hdp::directory_recursive_create { $piddirprefix: 
         owner => 'root'
     }
 
-    $dfs_domain_socket_path_dir = hdp_get_directory_from_filepath($hdp-hadoop::params::dfs_domain_socket_path)
+    $dfs_domain_socket_path_dir = hdp_get_directory_from_filepath($hdp_hadoop::params::dfs_domain_socket_path)
     hdp::directory_recursive_create { $dfs_domain_socket_path_dir:
       owner => $hdfs_user,
       group => $hdp::params::user_group,
@@ -290,7 +290,7 @@ class hdp-hadoop(
     if ($hdp::params::security_enabled == true) {
       file { "${hdp::params::hadoop_bin}/task-controller":
         owner   => 'root',
-        group   => $hdp-hadoop::params::mapred_tt_group,
+        group   => $hdp_hadoop::params::mapred_tt_group,
         mode    => '6050',
         require => Hdp-hadoop::Package['hadoop'],
         before  => Anchor['hdp-hadoop::end']
@@ -395,7 +395,7 @@ class hdp-hadoop::enable-ganglia()
 ###config file helper
 define hdp-hadoop::configfile(
   $owner = undef,
-  $hadoop_conf_dir = $hdp-hadoop::params::conf_dir,
+  $hadoop_conf_dir = $hdp_hadoop::params::conf_dir,
   $mode = undef,
   $namenode_host = undef,
   $jtnode_host = undef,
@@ -451,9 +451,9 @@ define hdp-hadoop::exec-hadoop(
 {
   include hdp-hadoop::params
   $security_enabled = $hdp::params::security_enabled
-  $conf_dir = $hdp-hadoop::params::conf_dir
-  $hdfs_user = $hdp-hadoop::params::hdfs_user
-  $hbase_user = $hdp-hadoop::params::hbase_user
+  $conf_dir = $hdp_hadoop::params::conf_dir
+  $hdfs_user = $hdp_hadoop::params::hdfs_user
+  $hbase_user = $hdp_hadoop::params::hbase_user
 
   if ($user == undef) {
     $run_user = $hdfs_user
@@ -510,14 +510,14 @@ define hdp-hadoop::exec-hadoop(
 
 #####
 define hdp-hadoop::update-log4j-properties(
-  $hadoop_conf_dir = $hdp-hadoop::params::conf_dir
+  $hadoop_conf_dir = $hdp_hadoop::params::conf_dir
 )
 {
   $properties = [
-    { name => 'ambari.jobhistory.database', value => $hdp-hadoop::params::ambari_db_rca_url },
-    { name => 'ambari.jobhistory.driver', value => $hdp-hadoop::params::ambari_db_rca_driver },
-    { name => 'ambari.jobhistory.user', value => $hdp-hadoop::params::ambari_db_rca_username },
-    { name => 'ambari.jobhistory.password', value => $hdp-hadoop::params::ambari_db_rca_password },
+    { name => 'ambari.jobhistory.database', value => $hdp_hadoop::params::ambari_db_rca_url },
+    { name => 'ambari.jobhistory.driver', value => $hdp_hadoop::params::ambari_db_rca_driver },
+    { name => 'ambari.jobhistory.user', value => $hdp_hadoop::params::ambari_db_rca_username },
+    { name => 'ambari.jobhistory.password', value => $hdp_hadoop::params::ambari_db_rca_password },
     { name => 'ambari.jobhistory.logger', value => 'DEBUG,JHA' },
 
     { name => 'log4j.appender.JHA', value => 'org.apache.ambari.log4j.hadoop.mapreduce.jobhistory.JobHistoryAppender' },
@@ -538,7 +538,7 @@ define hdp-hadoop::update-log4j-properties(
 #####
 define hdp-hadoop::update-log4j-property(
   $log4j_file,
-  $hadoop_conf_dir = $hdp-hadoop::params::conf_dir
+  $hadoop_conf_dir = $hdp_hadoop::params::conf_dir
 )
 {
   hdp::exec{ "sed -i 's~\\(${hdp-hadoop::params::rca_disabled_prefix}\\)\\?${name[name]}=.*~${hdp-hadoop::params::rca_prefix}${name[name]}=${name[value]}~' ${hadoop_conf_dir}/${log4j_file}":

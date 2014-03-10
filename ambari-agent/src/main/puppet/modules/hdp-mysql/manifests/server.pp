@@ -26,9 +26,9 @@ class hdp-mysql::server(
   if ($service_state in ['no_op','uninstalled']) {
    } elsif ($service_state in ['running','stopped','installed_and_configured']) {
    
-    $db_user = $hdp-mysql::params::db_user
-    $db_pw = hdp_escape_spec_characters($hdp-mysql::params::db_pw)
-    $db_name = $hdp-mysql::params::db_name
+    $db_user = $hdp_mysql::params::db_user
+    $db_pw = hdp_escape_spec_characters($hdp_mysql::params::db_pw)
+    $db_name = $hdp_mysql::params::db_name
     $host = $hdp::params::hive_mysql_host 
 
     anchor { 'hdp-mysql::server::begin':}

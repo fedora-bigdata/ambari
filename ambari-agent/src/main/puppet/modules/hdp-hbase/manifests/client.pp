@@ -24,7 +24,7 @@ class hdp-hbase::client(
 )
 {
   include hdp-hbase::params
-  $hbase_tmp_dir = $hdp-hbase::params::hbase_tmp_dir
+  $hbase_tmp_dir = $hdp_hbase::params::hbase_tmp_dir
 
   #assumption is there are no other hbase components on node
   if ($service_state == 'no_op') {
@@ -37,7 +37,7 @@ class hdp-hbase::client(
       }
 
       hdp::directory_recursive_create_ignore_failure { "${hbase_tmp_dir}/local/jars":
-        owner => $hdp-hbase::params::hbase_user,
+        owner => $hdp_hbase::params::hbase_user,
         context_tag => 'hbase_client',
         service_state => $service_state,
         force => true

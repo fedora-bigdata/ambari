@@ -24,8 +24,8 @@ class hdp-ganglia(
 {
   if ! ($service_state in ['no_op', 'uninstalled']) {
     include hdp-ganglia::params
-    $gmetad_user = $hdp-ganglia::params::gmetad_user
-    $gmond_user = $hdp-ganglia::params::gmond_user
+    $gmetad_user = $hdp_ganglia::params::gmetad_user
+    $gmond_user = $hdp_ganglia::params::gmond_user
 
     hdp::group { 'gmetad_group' :
       group_name => $gmetad_user,

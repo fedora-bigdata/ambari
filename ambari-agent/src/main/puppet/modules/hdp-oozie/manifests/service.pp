@@ -24,11 +24,11 @@ class hdp-oozie::service(
   $initial_wait = undef
 )
 {
-  include $hdp-oozie::params
+  include $hdp_oozie::params
   
-  $user = "$hdp-oozie::params::oozie_user"
-  $hadoop_home = $hdp-oozie::params::hadoop_prefix
-  $oozie_tmp = $hdp-oozie::params::oozie_tmp_dir
+  $user = "$hdp_oozie::params::oozie_user"
+  $hadoop_home = $hdp_oozie::params::hadoop_prefix
+  $oozie_tmp = $hdp_oozie::params::oozie_tmp_dir
   $oozie_hdfs_user_dir = $hdp::params::oozie_hdfs_user_dir
   $cmd = "env HADOOP_HOME=${hadoop_home} /usr/sbin/oozie_server.sh"
   $pid_file = "${hdp-oozie::params::oozie_pid_dir}/oozie.pid" 
@@ -43,7 +43,7 @@ class hdp-oozie::service(
   $lzo_enabled = $hdp::params::lzo_enabled
 
   $security = $hdp::params::security_enabled
-  $oozie_keytab = $hdp-oozie::params::oozie_service_keytab
+  $oozie_keytab = $hdp_oozie::params::oozie_service_keytab
   $oozie_principal = $configuration['oozie-site']['oozie.service.HadoopAccessorService.kerberos.principal']
   
   $oracle_driver_jar_name = "ojdbc6.jar"
@@ -140,12 +140,12 @@ class hdp-oozie::service(
     $daemon_cmd = undef
   }
 
-  hdp-oozie::service::directory { $hdp-oozie::params::oozie_pid_dir : }
-  hdp-oozie::service::directory { $hdp-oozie::params::oozie_log_dir : }
-  hdp-oozie::service::directory { $hdp-oozie::params::oozie_tmp_dir : }
-  hdp-oozie::service::directory { $hdp-oozie::params::oozie_data_dir : }
-  hdp-oozie::service::directory { $hdp-oozie::params::oozie_lib_dir : }
-  hdp-oozie::service::directory { $hdp-oozie::params::oozie_webapps_dir : }
+  hdp-oozie::service::directory { $hdp_oozie::params::oozie_pid_dir : }
+  hdp-oozie::service::directory { $hdp_oozie::params::oozie_log_dir : }
+  hdp-oozie::service::directory { $hdp_oozie::params::oozie_tmp_dir : }
+  hdp-oozie::service::directory { $hdp_oozie::params::oozie_data_dir : }
+  hdp-oozie::service::directory { $hdp_oozie::params::oozie_lib_dir : }
+  hdp-oozie::service::directory { $hdp_oozie::params::oozie_webapps_dir : }
 
   anchor{'hdp-oozie::service::begin':} -> Hdp-oozie::Service::Directory<||> -> anchor{'hdp-oozie::service::end':}
   
@@ -188,9 +188,9 @@ class hdp-oozie::service(
 define hdp-oozie::service::directory()
 {
   hdp::directory_recursive_create { $name: 
-    owner => $hdp-oozie::params::oozie_user,
+    owner => $hdp_oozie::params::oozie_user,
     mode => '0755',
-    service_state => $hdp-oozie::service::ensure,
+    service_state => $hdp_oozie::service::ensure,
     force => true
   }
 }
@@ -208,7 +208,7 @@ define hdp-oozie::service::exec_sh()
   hdp::exec { "exec $name":
     command => "/bin/sh -c '$name'",
     unless  => $no_op_test,
-    initial_wait => $hdp-oozie::service::initial_wait
+    initial_wait => $hdp_oozie::service::initial_wait
   }
 }
 
@@ -218,6 +218,6 @@ define hdp-oozie::service::exec_user()
   hdp::exec { "exec $name":
     command => "su - ${hdp-oozie::service::user} -c '$name'",
     unless  => $no_op_test,
-    initial_wait => $hdp-oozie::service::initial_wait
+    initial_wait => $hdp_oozie::service::initial_wait
   }
 }

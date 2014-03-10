@@ -24,7 +24,7 @@ class hdp-templeton::server(
 ) inherits  hdp-templeton::params
 {  
 
-  $templeton_user = $hdp-templeton::params::templeton_user
+  $templeton_user = $hdp_templeton::params::templeton_user
   if ($service_state == 'no_op') { 
   } elsif ($service_state in ['running','stopped','installed_and_configured','uninstalled']) {
   $hdp::params::service_exists['hdp-templeton::server'] = true

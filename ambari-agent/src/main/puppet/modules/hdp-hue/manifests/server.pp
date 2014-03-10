@@ -32,7 +32,7 @@ class hdp-hue::server(
       service_state => $service_state,
     }
 
-    Hdp-hue::Generate_config_file<||>{ config_file_path => $hdp-hue::params::hue_conf_file }
+    Hdp-hue::Generate_config_file<||>{ config_file_path => $hdp_hue::params::hue_conf_file }
 
     class { 'hdp-hue::service' :
       ensure => $service_state

@@ -24,7 +24,7 @@ class hdp-hbase::hbase::service_check() inherits hdp-hbase::params
   $security_enabled = $hdp::params::security_enabled
   $conf_dir = $hdp::params::hbase_conf_dir
   $smoke_user_keytab = $hdp::params::smokeuser_keytab
-  $hbase_user = $hdp-hbase::params::hbase_user
+  $hbase_user = $hdp_hbase::params::hbase_user
   $hbase_keytab = $hdp::params::hbase_user_keytab
   $serviceCheckData = hdp_unique_id_and_date()
   $kinit_cmd = "${hdp::params::kinit_path_local} -kt ${smoke_user_keytab} ${smoke_test_user};"

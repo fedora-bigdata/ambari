@@ -28,7 +28,7 @@ class hdp-hadoop::zkfc(
   Hdp-hadoop::Package<||>{include_64_bit => true}
   Hdp-hadoop::Configfile<||>{sizes +> 64}
   
-  $hdfs_user = $hdp-hadoop::params::hdfs_user
+  $hdfs_user = $hdp_hadoop::params::hdfs_user
   
   if ($service_state == 'no_op') {
   } elsif ($service_state in ['running','stopped','installed_and_configured','uninstalled']) { 
@@ -38,7 +38,7 @@ class hdp-hadoop::zkfc(
     
     hdp-hadoop::service{ 'zkfc':
       ensure         => $service_state,
-      user           => $hdp-hadoop::params::hdfs_user,
+      user           => $hdp_hadoop::params::hdfs_user,
       create_pid_dir => true,
       create_log_dir => true
     }

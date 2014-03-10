@@ -32,15 +32,15 @@ define hdp-hadoop::hdfs::directory(
   $namenode_safe_mode_off = "hadoop dfsadmin -safemode get|grep 'Safe mode is OFF'"
 
   # Short circuit the expensive dfs client checks if directory was already created
-  $stub_dir = $hdp-hadoop::params::namenode_dirs_created_stub_dir
-  $stub_filename = $hdp-hadoop::params::namenode_dirs_stub_filename
+  $stub_dir = $hdp_hadoop::params::namenode_dirs_created_stub_dir
+  $stub_filename = $hdp_hadoop::params::namenode_dirs_stub_filename
   $dir_absent_in_stub = "grep -q '^${name}$' ${stub_dir}/${stub_filename} > /dev/null 2>&1; test $? -ne 0"
   $record_dir_in_stub = "echo '${name}' >> ${stub_dir}/${stub_filename}"
   $tries = 30
   $try_sleep = 10
 
   if ($hdp::params::dfs_ha_enabled == true) {
-     $namenode_id = $hdp-hadoop::params::namenode_id
+     $namenode_id = $hdp_hadoop::params::namenode_id
      if (hdp_is_empty($namenode_id) == false) {
        $dfs_check_nn_status_cmd = "hdfs haadmin -getServiceState $namenode_id | grep active > /dev/null"
      }
@@ -65,7 +65,7 @@ define hdp-hadoop::hdfs::directory(
 
     hdp::exec { $record_dir_in_stub:
       command => $record_dir_in_stub,
-      user => $hdp-hadoop::params::hdfs_user,
+      user => $hdp_hadoop::params::hdfs_user,
       onlyif => $dir_absent_in_stub
     }
 

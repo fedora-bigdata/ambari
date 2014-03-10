@@ -184,9 +184,9 @@ class hdp-ganglia::server::files(
 
   anchor{ 'hdp-ganglia::server::files::begin' : } -> Hdp::Directory_recursive_create[$rrd_py_path] -> File[$rrd_py_file_path] -> anchor{ 'hdp-ganglia::server::files::end' : }
 
-  $rrd_files_dir = $hdp-ganglia::params::rrdcached_base_dir
-  $rrd_file_owner = $hdp-ganglia::params::gmetad_user
-  $rrdcached_default_file_dir = $hdp-ganglia::params::rrdcached_default_base_dir
+  $rrd_files_dir = $hdp_ganglia::params::rrdcached_base_dir
+  $rrd_file_owner = $hdp_ganglia::params::gmetad_user
+  $rrdcached_default_file_dir = $hdp_ganglia::params::rrdcached_default_base_dir
 
   ## If directory is different fr omdefault make sure it exists
   if ($rrdcached_default_file_dir != $rrd_files_dir) {
@@ -227,7 +227,7 @@ class hdp-ganglia::service::change_permission(
   if ($ensure == 'running' or $ensure == 'installed_and_configured') {
     hdp::directory_recursive_create { '/var/lib/ganglia/dwoo' :
       mode => '0777',
-      owner => $hdp-ganglia::params::gmetad_user
+      owner => $hdp_ganglia::params::gmetad_user
     }
   }
 }

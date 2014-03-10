@@ -33,7 +33,7 @@ class hdp-hadoop::namenode(
 
   if ($service_state == 'no_op') {
   } elsif ($service_state in ['running','stopped','installed_and_configured','uninstalled']) { 
-    $dfs_name_dir = $hdp-hadoop::params::dfs_name_dir
+    $dfs_name_dir = $hdp_hadoop::params::dfs_name_dir
   
     #adds package, users and directories, and common hadoop configs
     include hdp-hadoop::initialize
@@ -45,20 +45,20 @@ class hdp-hadoop::namenode(
         masterhost => $masterHost,
         keytabdst => "${$keytab_path}/nn.service.keytab",
         keytabfile => 'nn.service.keytab',
-        owner => $hdp-hadoop::params::hdfs_user
+        owner => $hdp_hadoop::params::hdfs_user
       }
       hdp::download_keytab { 'namenode_hdfs_headless_keytab' :   
         masterhost => $masterHost,
         keytabdst => "${$keytab_path}/hdfs.headless.keytab",
         keytabfile => 'hdfs.headless.keytab', 
-        owner => $hdp-hadoop::params::hdfs_user, 
+        owner => $hdp_hadoop::params::hdfs_user, 
         hostnameInPrincipals => 'no'
       }
       hdp::download_keytab { 'namenode_spnego_keytab' :   
         masterhost => $masterHost,
         keytabdst => "${$keytab_path}/spnego.service.keytab",
         keytabfile => 'spnego.service.keytab', 
-        owner => $hdp-hadoop::params::hdfs_user, 
+        owner => $hdp_hadoop::params::hdfs_user, 
         mode => '0440',
         group => $hdp::params::user_group
       }
@@ -77,7 +77,7 @@ class hdp-hadoop::namenode(
 
     hdp-hadoop::service{ 'namenode':
       ensure       => $service_state,
-      user         => $hdp-hadoop::params::hdfs_user,
+      user         => $hdp_hadoop::params::hdfs_user,
       initial_wait => hdp_option_value($opts,'wait')
     }
 
@@ -112,7 +112,7 @@ define hdp-hadoop::namenode::create_name_dirs($service_state)
 {
   $dirs = hdp_array_from_comma_list($name)
   hdp::directory_recursive_create { $dirs :
-    owner => $hdp-hadoop::params::hdfs_user,
+    owner => $hdp_hadoop::params::hdfs_user,
     mode => '0755',
     service_state => $service_state,
     force => true
@@ -126,25 +126,25 @@ define hdp-hadoop::namenode::create_app_directories($service_state)
    
     hdp-hadoop::hdfs::directory{ "/tmp" :
       service_state => $service_state,
-      owner => $hdp-hadoop::params::hdfs_user,
+      owner => $hdp_hadoop::params::hdfs_user,
       mode => '777'
     }
 
     hdp-hadoop::hdfs::directory{ '/mapred' :
       service_state => $service_state,
-      owner         => $hdp-hadoop::params::mapred_user
+      owner         => $hdp_hadoop::params::mapred_user
     }
 
     hdp-hadoop::hdfs::directory{ '/mapred/system' :
       service_state => $service_state,
-      owner         => $hdp-hadoop::params::mapred_user
+      owner         => $hdp_hadoop::params::mapred_user
     }
 
     Hdp-hadoop::Hdfs::Directory['/mapred'] -> Hdp-hadoop::Hdfs::Directory['/mapred/system']
 
     if ($hdp::params::hbase_master_hosts != "") {
 
-      hdp-hadoop::hdfs::directory { $hdp-hadoop::params::hdfs_root_dir:
+      hdp-hadoop::hdfs::directory { $hdp_hadoop::params::hdfs_root_dir:
         owner         => $hdp::params::hbase_user,
         service_state => $service_state
       }

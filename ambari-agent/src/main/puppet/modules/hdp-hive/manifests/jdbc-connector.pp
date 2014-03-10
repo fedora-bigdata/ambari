@@ -22,12 +22,12 @@ class hdp-hive::jdbc-connector()
 {
   include hdp-hive::params
 
-  $jdbc_jar_name = $hdp-hive::params::jdbc_jar_name
+  $jdbc_jar_name = $hdp_hive::params::jdbc_jar_name
   
   $java_share_dir = "/usr/share/java"
   $driver_curl_target = "${java_share_dir}/${jdbc_jar_name}"
 
-  $hive_lib = $hdp-hive::params::hive_lib
+  $hive_lib = $hdp_hive::params::hive_lib
   $target = "${hive_lib}/${jdbc_jar_name}"
   
   $jdk_location = $hdp::params::jdk_location

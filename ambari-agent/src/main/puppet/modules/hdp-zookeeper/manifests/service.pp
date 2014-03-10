@@ -23,13 +23,13 @@ class hdp-zookeeper::service(
   $myid
 )
 {
-  include $hdp-zookeeper::params
-  $user = $hdp-zookeeper::params::zk_user
-  $conf_dir = $hdp-zookeeper::params::conf_dir
+  include $hdp_zookeeper::params
+  $user = $hdp_zookeeper::params::zk_user
+  $conf_dir = $hdp_zookeeper::params::conf_dir
   $zk_bin = $hdp::params::zk_bin
   $cmd = "env ZOOCFGDIR=${conf_dir} ZOOCFG=zoo.cfg ${zk_bin}/zkServer.sh"
 
-  $pid_file = $hdp-zookeeper::params::zk_pid_file  
+  $pid_file = $hdp_zookeeper::params::zk_pid_file  
 
   if ($ensure == 'running') {
     $daemon_cmd = "su - ${user} -c  'source ${conf_dir}/zookeeper-env.sh ; ${cmd} start'"
@@ -42,19 +42,19 @@ class hdp-zookeeper::service(
   } else {
     $daemon_cmd = undef
   }
-  hdp::directory_recursive_create { $hdp-zookeeper::params::zk_pid_dir: 
+  hdp::directory_recursive_create { $hdp_zookeeper::params::zk_pid_dir: 
     owner        => $user,
     context_tag => 'zk_service',
     service_state => $ensure,
     force => true
   }
-  hdp::directory_recursive_create { $hdp-zookeeper::params::zk_log_dir: 
+  hdp::directory_recursive_create { $hdp_zookeeper::params::zk_log_dir: 
     owner        => $user,
     context_tag => 'zk_service',
     service_state => $ensure,
     force => true
   }
-   hdp::directory_recursive_create { $hdp-zookeeper::params::zk_data_dir: 
+   hdp::directory_recursive_create { $hdp_zookeeper::params::zk_data_dir: 
     owner        => $user,
     context_tag => 'zk_service',
     service_state => $ensure,

@@ -27,16 +27,16 @@ class hdp::params()
 
   ###### environment variables
   if (hdp_is_empty($configuration) == false) {
-    $core-site = $configuration['core-site']
-    $hbase-site = $configuration['hbase-site']
-    $hdfs-site = $configuration['hdfs-site']
-    $hive-site = $configuration['hive-site']
-    $hue-site = $configuration['hue-site']
-    $mapred-site = $configuration['mapred-site']
-    $oozie-site = $configuration['oozie-site']
-    $sqoop-site = $configuration['sqoop-site']
-    $webhcat-site = $configuration['webhcat-site']
-    $yarn-site = $configuration['yarn-site']
+    $core_site = $configuration['core-site']
+    $hbase_site = $configuration['hbase-site']
+    $hdfs_site = $configuration['hdfs-site']
+    $hive_site = $configuration['hive-site']
+    $hue_site = $configuration['hue-site']
+    $mapred_site = $configuration['mapred-site']
+    $oozie_site = $configuration['oozie-site']
+    $sqoop_site = $configuration['sqoop-site']
+    $webhcat_site = $configuration['webhcat-site']
+    $yarn_site = $configuration['yarn-site']
   }
 
   ## Stack version

@@ -25,12 +25,12 @@ class hdp-hive(
 {
   include hdp-hive::params
   
-  $hive_user = $hdp-hive::params::hive_user
+  $hive_user = $hdp_hive::params::hive_user
   if ($server == true) {
-    $hive_config_dir = $hdp-hive::params::hive_server_conf_dir
+    $hive_config_dir = $hdp_hive::params::hive_server_conf_dir
     $config_file_mode = '0600'
   } else {
-    $hive_config_dir = $hdp-hive::params::hive_conf_dir
+    $hive_config_dir = $hdp_hive::params::hive_conf_dir
     $config_file_mode = '0644'
   }
 
@@ -108,38 +108,38 @@ class hdp-hive(
 define hdp-hive::configfile(
   $mode = undef,
   $hive_server_host = undef,
-  $config_dir = $hdp-hive::params::hive_conf_dir
+  $config_dir = $hdp_hive::params::hive_conf_dir
 ) 
 {
   hdp::configfile { "${config_dir}/${name}":
     component        => 'hive',
-    owner            => $hdp-hive::params::hive_user,
+    owner            => $hdp_hive::params::hive_user,
     mode             => $mode,
     hive_server_host => $hive_server_host 
   }
 }
 
 define hdp-hive::ownership(
-  $config_dir = $hdp-hive::params::hive_conf_dir
+  $config_dir = $hdp_hive::params::hive_conf_dir
 )
 {
   file { "${config_dir}/hive-default.xml.template":
-    owner => $hdp-hive::params::hive_user,
+    owner => $hdp_hive::params::hive_user,
     group => $hdp::params::user_group
   }
 
   file { "${config_dir}/hive-env.sh.template":
-    owner => $hdp-hive::params::hive_user,
+    owner => $hdp_hive::params::hive_user,
     group => $hdp::params::user_group
   }
 
   file { "${config_dir}/hive-exec-log4j.properties.template":
-    owner => $hdp-hive::params::hive_user,
+    owner => $hdp_hive::params::hive_user,
     group => $hdp::params::user_group
   }
 
   file { "${config_dir}/hive-log4j.properties.template":
-    owner => $hdp-hive::params::hive_user,
+    owner => $hdp_hive::params::hive_user,
     group => $hdp::params::user_group
   }
 }

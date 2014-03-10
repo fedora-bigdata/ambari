@@ -28,8 +28,8 @@ class hdp-oozie(
 
 # Configs generation  
 
-  $oozie_user = $hdp-oozie::params::oozie_user
-  $oozie_config_dir = $hdp-oozie::params::conf_dir
+  $oozie_user = $hdp_oozie::params::oozie_user
+  $oozie_config_dir = $hdp_oozie::params::conf_dir
 
   if has_key($configuration, 'oozie-site') {
     configgenerator::configfile{'oozie-site':
@@ -116,7 +116,7 @@ define hdp-oozie::configfile(
 {
   hdp::configfile { "${hdp-oozie::params::conf_dir}/${name}":
     component       => 'oozie',
-    owner           => $hdp-oozie::params::oozie_user,
+    owner           => $hdp_oozie::params::oozie_user,
     mode            => $mode,
     oozie_server    => $oozie_server
   }
@@ -124,27 +124,27 @@ define hdp-oozie::configfile(
 
 define hdp-oozie::ownership {
   file { "${hdp-oozie::params::conf_dir}/adminusers.txt":
-    owner => $hdp-oozie::params::oozie_user,
+    owner => $hdp_oozie::params::oozie_user,
     group => $hdp::params::user_group
   }
 
   file { "${hdp-oozie::params::conf_dir}/hadoop-config.xml":
-    owner => $hdp-oozie::params::oozie_user,
+    owner => $hdp_oozie::params::oozie_user,
     group => $hdp::params::user_group
   }
 
   file { "${hdp-oozie::params::conf_dir}/oozie-default.xml":
-    owner => $hdp-oozie::params::oozie_user,
+    owner => $hdp_oozie::params::oozie_user,
     group => $hdp::params::user_group
   }
 
   file { "${hdp-oozie::params::conf_dir}/action-conf":
-    owner => $hdp-oozie::params::oozie_user,
+    owner => $hdp_oozie::params::oozie_user,
     group => $hdp::params::user_group
   }
 
   file { "${hdp-oozie::params::conf_dir}/action-conf/hive.xml":
-    owner => $hdp-oozie::params::oozie_user,
+    owner => $hdp_oozie::params::oozie_user,
     group => $hdp::params::user_group
   }
 }

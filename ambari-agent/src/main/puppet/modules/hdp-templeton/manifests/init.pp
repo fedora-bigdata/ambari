@@ -25,8 +25,8 @@ class hdp-templeton(
 {
 # Configs generation  
 
-  $webhcat_user = $hdp-templeton::params::webhcat_user
-  $templeton_config_dir = $hdp-templeton::params::conf_dir
+  $webhcat_user = $hdp_templeton::params::webhcat_user
+  $templeton_config_dir = $hdp_templeton::params::conf_dir
 
   if has_key($configuration, 'webhcat-site') {
     configgenerator::configfile{'webhcat-site': 
@@ -96,7 +96,7 @@ define hdp-templeton::configfile(
 {
   hdp::configfile { "${hdp-templeton::params::conf_dir}/${name}":
     component       => 'templeton',
-    owner           => $hdp-templeton::params::webhcat_user,
+    owner           => $hdp_templeton::params::webhcat_user,
     mode            => $mode
   }
 }

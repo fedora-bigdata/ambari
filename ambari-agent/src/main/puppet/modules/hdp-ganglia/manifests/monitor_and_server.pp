@@ -23,9 +23,9 @@ class hdp-ganglia::monitor_and_server(
   $opts = {}
 ) inherits hdp-ganglia::params
 {
-  $ganglia_shell_cmds_dir = $hdp-ganglia::params::ganglia_shell_cmds_dir
-  $ganglia_conf_dir = $hdp-ganglia::params::ganglia_conf_dir
-  $ganglia_runtime_dir = $hdp-ganglia::params::ganglia_runtime_dir
+  $ganglia_shell_cmds_dir = $hdp_ganglia::params::ganglia_shell_cmds_dir
+  $ganglia_conf_dir = $hdp_ganglia::params::ganglia_conf_dir
+  $ganglia_runtime_dir = $hdp_ganglia::params::ganglia_runtime_dir
 
   #note: includes the common package ganglia-monitor
   class { 'hdp-ganglia':

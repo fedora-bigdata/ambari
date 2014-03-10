@@ -22,10 +22,10 @@ class hdp-hadoop::namenode::format(
   $force = false
 )
 {
-  $mark_dir = $hdp-hadoop::params::namenode_formatted_mark_dir
-  $dfs_name_dir = $hdp-hadoop::params::dfs_name_dir
+  $mark_dir = $hdp_hadoop::params::namenode_formatted_mark_dir
+  $dfs_name_dir = $hdp_hadoop::params::dfs_name_dir
   $hdfs_user = $hdp::params::hdfs_user
-  $hadoop_conf_dir = $hdp-hadoop::params::conf_dir
+  $hadoop_conf_dir = $hdp_hadoop::params::conf_dir
 
   # Avoid formatting standby namenode in a HA cluster
   if ($hdp::params::dfs_ha_enabled == false) {

@@ -23,24 +23,24 @@ class hdp-hive::service(
   $service_type
 )
 {
-  include $hdp-hive::params
+  include $hdp_hive::params
   
-  $hive_user = $hdp-hive::params::hive_user
+  $hive_user = $hdp_hive::params::hive_user
   $hadoop_home = $hdp::params::hadoop_home
-  $hive_pid_dir = $hdp-hive::params::hive_pid_dir
-  $hive_pid = $hdp-hive::params::hive_pid
-  $hive_log_dir = $hdp-hive::params::hive_log_dir
-  $start_hiveserver2_script = $hdp-hive::params::start_hiveserver2_script
-  $start_metastore_script = $hdp-hive::params::start_metastore_script
-  $hive_var_lib = $hdp-hive::params::hive_var_lib
-  $hive_server_conf_dir = $hdp-hive::params::hive_server_conf_dir
+  $hive_pid_dir = $hdp_hive::params::hive_pid_dir
+  $hive_pid = $hdp_hive::params::hive_pid
+  $hive_log_dir = $hdp_hive::params::hive_log_dir
+  $start_hiveserver2_script = $hdp_hive::params::start_hiveserver2_script
+  $start_metastore_script = $hdp_hive::params::start_metastore_script
+  $hive_var_lib = $hdp_hive::params::hive_var_lib
+  $hive_server_conf_dir = $hdp_hive::params::hive_server_conf_dir
 
   $start_hiveserver2_path = "/tmp/$start_hiveserver2_script"
   $start_metastore_path = "/tmp/$start_metastore_script"
 
   if ($service_type == 'metastore') {
     $pid_file = "$hive_pid_dir/hive.pid" 
-    $cmd = "env HADOOP_HOME=${hadoop_home} JAVA_HOME=$hdp::params::java64_home $start_metastore_path ${hive_log_dir}/hive.out ${hive_log_dir}/hive.log $pid_file $hdp-hive::params::hive_server_conf_dir"
+    $cmd = "env HADOOP_HOME=${hadoop_home} JAVA_HOME=$hdp::params::java64_home $start_metastore_path ${hive_log_dir}/hive.out ${hive_log_dir}/hive.log $pid_file $hdp_hive::params::hive_server_conf_dir"
     
   } elsif ($service_type == 'hiveserver2') {
     $pid_file = "$hive_pid_dir/$hive_pid" 
@@ -120,7 +120,7 @@ class hdp-hive::service(
 define hdp-hive::service::directory()
 {
   hdp::directory_recursive_create { $name: 
-    owner => $hdp-hive::params::hive_user,
+    owner => $hdp_hive::params::hive_user,
     mode => '0755',
     service_state => $::ensure,
     force => true
