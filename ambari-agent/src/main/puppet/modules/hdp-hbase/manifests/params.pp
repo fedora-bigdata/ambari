@@ -102,9 +102,9 @@ class hdp-hbase::params() inherits hdp::params
   }
 
   if (hdp_get_major_stack_version($hdp::params::stack_version) >= 2) {
-    $metric-prop-file-name = "hadoop-metrics2-hbase.properties"
+    $metric_prop_file_name = "hadoop-metrics2-hbase.properties"
   } else {
-    $metric-prop-file-name = "hadoop-metrics.properties"
+    $metric_prop_file_name = "hadoop-metrics.properties"
   }
   $smokeuser_permissions = hdp_default("smokeuser_permissions", "RWXCA")
 }

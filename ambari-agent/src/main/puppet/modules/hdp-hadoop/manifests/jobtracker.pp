@@ -30,8 +30,8 @@ class hdp-hadoop::jobtracker(
 
   if ($service_state == 'no_op') {
   } elsif ($service_state in ['running','stopped','installed_and_configured','uninstalled']) {
-    $mapred_user = $hdp-hadoop::params::mapred_user
-    $mapred_local_dir = $hdp-hadoop::params::mapred_local_dir 
+    $mapred_user = $hdp_hadoop::params::mapred_user
+    $mapred_local_dir = $hdp_hadoop::params::mapred_local_dir 
   
     #adds package, users and directories, and common hadoop configs
     include hdp-hadoop::initialize
@@ -43,7 +43,7 @@ class hdp-hadoop::jobtracker(
         masterhost => $masterHost,
         keytabdst => "${$keytab_path}/jt.service.keytab",
         keytabfile => 'jt.service.keytab',
-        owner => $hdp-hadoop::params::mapred_user
+        owner => $hdp_hadoop::params::mapred_user
       }
     }
      
@@ -55,7 +55,7 @@ class hdp-hadoop::jobtracker(
     Hdp-Hadoop::Configfile<||>{jtnode_host => $hdp::params::host_address}
 
     #TODO: do we keep precondition here?
-    if ($service_state == 'running' and $hdp-hadoop::params::use_preconditions == true) {
+    if ($service_state == 'running' and $hdp_hadoop::params::use_preconditions == true) {
       class { 'hdp-hadoop::hdfs::service_check':
         before => Hdp-hadoop::Service['jobtracker'],
         require => Class['hdp-hadoop']
@@ -88,7 +88,7 @@ define hdp-hadoop::jobtracker::create_local_dirs($service_state)
 {
     $dirs = hdp_array_from_comma_list($name)
     hdp::directory_recursive_create { $dirs :
-      owner => $hdp-hadoop::params::mapred_user,
+      owner => $hdp_hadoop::params::mapred_user,
       mode => '0755',
       service_state => $service_state,
       force => true

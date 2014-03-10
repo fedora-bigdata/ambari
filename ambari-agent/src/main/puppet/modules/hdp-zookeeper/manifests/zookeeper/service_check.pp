@@ -21,7 +21,7 @@
 class hdp-zookeeper::zookeeper::service_check()
 {
   include hdp-zookeeper::params
-  $conf_dir = $hdp-zookeeper::params::conf_dir
+  $conf_dir = $hdp_zookeeper::params::conf_dir
   $smoke_script = $hdp::params::zk_smoke_test_script
   $security_enabled = $hdp::params::security_enabled
   $smoke_test_user = $hdp::params::smokeuser

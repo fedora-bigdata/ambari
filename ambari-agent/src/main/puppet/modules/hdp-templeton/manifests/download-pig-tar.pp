@@ -22,8 +22,8 @@ class hdp-templeton::download-pig-tar()
 {
   include hdp-templeton::params
 
-  $src_tar_name = $hdp-templeton::params::src_pig_tar_name
-  $dest_tar_name = $hdp-templeton::params::dest_pig_tar_name
+  $src_tar_name = $hdp_templeton::params::src_pig_tar_name
+  $dest_tar_name = $hdp_templeton::params::dest_pig_tar_name
   $target = "${hdp::params::artifact_dir}/${dest_tar_name}"
 
   anchor { 'hdp-templeton::download-pig-tar::begin':}

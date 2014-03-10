@@ -22,8 +22,8 @@ class hdp-hcat(
   $service_state = $hdp::params::cluster_client_state
 ) inherits hdp-hcat::params
 {
-  $hcat_config_dir = $hdp-hcat::params::hcat_conf_dir
-  $hcat_pid_dir = $hdp-hcat::params::hcat_pid_dir
+  $hcat_config_dir = $hdp_hcat::params::hcat_conf_dir
+  $hcat_pid_dir = $hdp_hcat::params::hcat_pid_dir
 
   if ($hdp::params::use_32_bits_on_slaves == false) {
     $size = 64

@@ -35,7 +35,7 @@ class hdp-yarn::params(
   $rm_https_port = $hdp::rm_https_port
 
   ## yarn-env 
-  $hadoop_libexec_dir = $hdp-hadoop::params::hadoop_libexec_dir
+  $hadoop_libexec_dir = $hdp_hadoop::params::hadoop_libexec_dir
   $hadoop_yarn_home = hdp_default("hadoop_yarn_home","/usr/lib/hadoop-yarn")
   $yarn_heapsize = hdp_default("yarn_heapsize","1024")
   $resourcemanager_heapsize = hdp_default("resourcemanager_heapsize","1024")

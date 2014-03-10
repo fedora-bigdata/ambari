@@ -23,10 +23,10 @@ class hdp-yarn::nodemanager(
   $opts = {}
 ) inherits hdp-yarn::params
 {
-  $yarn_user = $hdp-yarn::params::yarn_user
-  $nm_local_dirs = $hdp-yarn::params::nm_local_dirs
-  $nm_log_dirs = $hdp-yarn::params::nm_log_dirs
-  $yarn_log_dir_prefix = $hdp-yarn::params::yarn_log_dir_prefix
+  $yarn_user = $hdp_yarn::params::yarn_user
+  $nm_local_dirs = $hdp_yarn::params::nm_local_dirs
+  $nm_log_dirs = $hdp_yarn::params::nm_log_dirs
+  $yarn_log_dir_prefix = $hdp_yarn::params::yarn_log_dir_prefix
 
   if ($service_state == 'no_op') {
   } elsif ($service_state in 'installed_and_configured') {
@@ -74,7 +74,7 @@ class hdp-yarn::nodemanager(
 define hdp-yarn::nodemanager::create_nm_dirs($service_state) {
   $dirs = hdp_array_from_comma_list($name)
   hdp::directory_recursive_create_ignore_failure { $dirs :
-    owner => $hdp-yarn::params::yarn_user,
+    owner => $hdp_yarn::params::yarn_user,
     context_tag => 'yarn_service',
     service_state => $service_state,
     force => true

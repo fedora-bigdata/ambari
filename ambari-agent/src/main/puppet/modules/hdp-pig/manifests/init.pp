@@ -22,7 +22,7 @@ class hdp-pig(
   $service_state = $hdp::params::cluster_client_state
 ) inherits hdp-pig::params
 {  
-  $pig_config_dir = $hdp-pig::params::pig_conf_dir
+  $pig_config_dir = $hdp_pig::params::pig_conf_dir
  
   if ($hdp::params::use_32_bits_on_slaves == false) {
     $size = 64

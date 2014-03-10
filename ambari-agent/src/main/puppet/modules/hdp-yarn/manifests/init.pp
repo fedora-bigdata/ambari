@@ -21,9 +21,9 @@
 
 class hdp-yarn::initialize()
 {
-  $mapred_user = $hdp-yarn::params::mapred_user
+  $mapred_user = $hdp_yarn::params::mapred_user
   $hdfs_user = $hdp::params::hdfs_user
-  $yarn_user = $hdp-yarn::params::yarn_user
+  $yarn_user = $hdp_yarn::params::yarn_user
 
   ##Process package
   hdp-yarn::package{'yarn-common':}
@@ -59,7 +59,7 @@ class hdp-yarn::initialize()
 
 define hdp-yarn::generate_common_configs() {
 
-  $yarn_config_dir = $hdp-yarn::params::conf_dir
+  $yarn_config_dir = $hdp_yarn::params::conf_dir
 
   # Generate configs
   if has_key($::configuration, 'core-site') {
@@ -86,13 +86,13 @@ define hdp-yarn::generate_common_configs() {
       filename => 'mapred-site.xml',
       module => 'hdp-yarn',
       configuration => $::configuration['mapred-site'],
-      owner => $hdp-yarn::params::yarn_user,
+      owner => $hdp_yarn::params::yarn_user,
       group => $hdp::params::user_group,
       mode => 644
     }
   } else { # Manually overriding ownership of file installed by hadoop package
     file { "${yarn_config_dir}/mapred-site.xml":
-      owner => $hdp-yarn::params::yarn_user,
+      owner => $hdp_yarn::params::yarn_user,
       group => $hdp::params::user_group,
       mode => 644
     }
@@ -104,13 +104,13 @@ define hdp-yarn::generate_common_configs() {
       filename => 'yarn-site.xml',
       module => 'hdp-yarn',
       configuration => $::configuration['yarn-site'],
-      owner => $hdp-yarn::params::yarn_user,
+      owner => $hdp_yarn::params::yarn_user,
       group => $hdp::params::user_group,
       mode => 644
     }
   } else { # Manually overriding ownership of file installed by hadoop package
     file { "${yarn_config_dir}/yarn-site.xml":
-      owner => $hdp-yarn::params::yarn_user,
+      owner => $hdp_yarn::params::yarn_user,
       group => $hdp::params::user_group,
       mode => 644
     }
@@ -122,13 +122,13 @@ define hdp-yarn::generate_common_configs() {
       filename => 'capacity-scheduler.xml',
       module => 'hdp-yarn',
       configuration => $::configuration['capacity-scheduler'],
-      owner => $hdp-yarn::params::yarn_user,
+      owner => $hdp_yarn::params::yarn_user,
       group => $hdp::params::user_group,
       mode => 644
     }
   } else { # Manually overriding ownership of file installed by hadoop package
     file { "${yarn_config_dir}/capacity-scheduler.xml":
-      owner => $hdp-yarn::params::yarn_user,
+      owner => $hdp_yarn::params::yarn_user,
       group => $hdp::params::user_group,
       mode => 644
     }
@@ -136,7 +136,7 @@ define hdp-yarn::generate_common_configs() {
 
   hdp::configfile {"${yarn_config_dir}/yarn-env.sh":
     component => 'yarn',
-    owner => $hdp-yarn::params::yarn_user,
+    owner => $hdp_yarn::params::yarn_user,
     group => $hdp::params::user_group,
     mode => 755
   }
@@ -152,7 +152,7 @@ define hdp-yarn::generate_common_configs() {
     $container_executor = "${hdp::params::yarn_container_bin}/container-executor"
     file { $container_executor:
       ensure => present,
-      group => $hdp-yarn::params::yarn_executor_container_group,
+      group => $hdp_yarn::params::yarn_executor_container_group,
       mode => 6050
     }
 

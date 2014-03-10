@@ -43,7 +43,7 @@ define hdp-yarn::service(
     $job_summary_log = "${hdp-yarn::params::yarn_log_dir_prefix}/${user}/hadoop-mapreduce.jobsummary.log"
   }
   
-  $hadoop_libexec_dir = $hdp-yarn::params::hadoop_libexec_dir
+  $hadoop_libexec_dir = $hdp_yarn::params::hadoop_libexec_dir
    
   $cmd = "export HADOOP_LIBEXEC_DIR=${hadoop_libexec_dir} && ${daemon} --config ${hdp-yarn::params::conf_dir}"
   

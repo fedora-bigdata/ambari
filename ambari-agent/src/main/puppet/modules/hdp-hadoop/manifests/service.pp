@@ -32,7 +32,7 @@ define hdp-hadoop::service(
   #NOTE does not work if namenode and datanode are on same host 
   $pid_dir = "${hdp-hadoop::params::hadoop_pid_dir_prefix}/${user}"
   
-  $hadoop_libexec_dir = $hdp-hadoop::params::hadoop_libexec_dir
+  $hadoop_libexec_dir = $hdp_hadoop::params::hadoop_libexec_dir
   
   if (($security_enabled == true) and ($name == 'datanode')) {
     $run_as_root = true

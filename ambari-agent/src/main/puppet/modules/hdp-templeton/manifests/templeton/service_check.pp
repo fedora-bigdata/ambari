@@ -46,7 +46,7 @@ define hdp-templeton::smoke_shell_file()
 {
   $smoke_test_user = $hdp::params::smokeuser
     
-  $security = $hdp-templeton::templeton::service_check::security
+  $security = $hdp_templeton::templeton::service_check::security
 
   $kinit_path = $hdp::params::kinit_path_local
   $smoke_user_keytab = $hdp::params::smokeuser_keytab

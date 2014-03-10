@@ -27,15 +27,15 @@ define hdp-hbase::service(
   include hdp-hbase::params
 
   $role = $name
-  $user = $hdp-hbase::params::hbase_user
+  $user = $hdp_hbase::params::hbase_user
 
   $conf_dir = $hdp::params::hbase_conf_dir
   $hbase_daemon = $hdp::params::hbase_daemon_script
   $cmd = "$hbase_daemon --config ${conf_dir}"
-  $pid_dir = $hdp-hbase::params::hbase_pid_dir
+  $pid_dir = $hdp_hbase::params::hbase_pid_dir
   $pid_file = "${pid_dir}/hbase-hbase-${role}.pid"
-  $hbase_log_dir = $hdp-hbase::params::hbase_log_dir
-  $hbase_tmp_dir = $hdp-hbase::params::hbase_tmp_dir
+  $hbase_log_dir = $hdp_hbase::params::hbase_log_dir
+  $hbase_tmp_dir = $hdp_hbase::params::hbase_tmp_dir
 
   if ($ensure == 'running') {
     $daemon_cmd = "su - ${user} -c  '${cmd} start ${role}'"

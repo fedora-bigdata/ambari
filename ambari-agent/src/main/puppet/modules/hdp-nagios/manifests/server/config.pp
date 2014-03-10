@@ -21,11 +21,11 @@
 class hdp-nagios::server::config()
 {
 
-  $host_cfg = $hdp-nagios::params::nagios_host_cfg
+  $host_cfg = $hdp_nagios::params::nagios_host_cfg
   $nagios_lookup_daemon_str = $hdp::params::nagios_lookup_daemon_strs[$hdp::params::hdp_os_type]
   
-  hdp-nagios::server::configfile { 'nagios.cfg': conf_dir => $hdp-nagios::params::conf_dir, group => $hdp-nagios::params::nagios_group }
-  hdp-nagios::server::configfile { 'resource.cfg': conf_dir => $hdp-nagios::params::conf_dir, group => $hdp-nagios::params::nagios_group }
+  hdp-nagios::server::configfile { 'nagios.cfg': conf_dir => $hdp_nagios::params::conf_dir, group => $hdp_nagios::params::nagios_group }
+  hdp-nagios::server::configfile { 'resource.cfg': conf_dir => $hdp_nagios::params::conf_dir, group => $hdp_nagios::params::nagios_group }
   hdp-nagios::server::configfile { 'hadoop-hosts.cfg': }
   hdp-nagios::server::configfile { 'hadoop-hostgroups.cfg': }
   hdp-nagios::server::configfile { 'hadoop-servicegroups.cfg': }
@@ -60,9 +60,9 @@ class hdp-nagios::server::config()
 
 ###config file helper
 define hdp-nagios::server::configfile(
-  $owner = $hdp-nagios::params::nagios_user,
+  $owner = $hdp_nagios::params::nagios_user,
   $group = $hdp::params::user_group,
-  $conf_dir = $hdp-nagios::params::nagios_obj_dir,
+  $conf_dir = $hdp_nagios::params::nagios_obj_dir,
   $mode = undef
 ) 
 {

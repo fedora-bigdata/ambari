@@ -31,7 +31,7 @@ class hdp-hadoop::snamenode(
 
   if ($service_state == 'no_op') {
   } elsif ($service_state in ['running','stopped','installed_and_configured','uninstalled']) {
-    $fs_checkpoint_dir = $hdp-hadoop::params::fs_checkpoint_dir
+    $fs_checkpoint_dir = $hdp_hadoop::params::fs_checkpoint_dir
   
     #adds package, users and directories, and common hadoop configs
     include hdp-hadoop::initialize
@@ -44,13 +44,13 @@ class hdp-hadoop::snamenode(
           masterhost => $masterHost,
           keytabdst => "${$keytab_path}/nn.service.keytab",
           keytabfile => 'nn.service.keytab',
-          owner => $hdp-hadoop::params::hdfs_user
+          owner => $hdp_hadoop::params::hdfs_user
         }
         hdp::download_keytab { 'snamenode_spnego_keytab' :   
           masterhost => $masterHost,
           keytabdst => "${$keytab_path}/spnego.service.keytab",
           keytabfile => 'spnego.service.keytab', 
-          owner => $hdp-hadoop::params::hdfs_user,
+          owner => $hdp_hadoop::params::hdfs_user,
           mode => '0440',
           group => $hdp::params::user_group
         }
@@ -73,7 +73,7 @@ class hdp-hadoop::snamenode(
     
     hdp-hadoop::service{ 'secondarynamenode':
       ensure         => $service_state,
-      user           => $hdp-hadoop::params::hdfs_user,
+      user           => $hdp_hadoop::params::hdfs_user,
       create_pid_dir => $create_pid_dir,
       create_log_dir => $create_log_dir
     }
@@ -90,7 +90,7 @@ define hdp-hadoop::snamenode::create_name_dirs($service_state)
 {
    $dirs = hdp_array_from_comma_list($name)
    hdp::directory_recursive_create { $dirs :
-     owner => $hdp-hadoop::params::hdfs_user,
+     owner => $hdp_hadoop::params::hdfs_user,
      mode => '0755',
      service_state => $service_state,
      force => true

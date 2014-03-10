@@ -21,7 +21,7 @@
 class hdp-zookeeper::quorum::service_check()
 {
   include hdp-zookeeper::params
-  $conf_dir = $hdp-zookeeper::params::conf_dir
+  $conf_dir = $hdp_zookeeper::params::conf_dir
   $security_enabled = $hdp::params::security_enabled
   $smoke_test_user = $hdp::params::smokeuser
   $kinit_path = $hdp::params::kinit_path_local
@@ -38,7 +38,7 @@ class hdp-zookeeper::quorum::service_check()
 
 define hdp-zookeeper::quorum_smoke_shell_file()
 {
-  $conf_dir = $hdp-zookeeper::params::conf_dir
+  $conf_dir = $hdp_zookeeper::params::conf_dir
   $smoke_test_user = $hdp::params::smokeuser
   $smoke_script = $hdp::params::zk_smoke_test_script
   $smoke_user_keytab = $hdp::params::smokeuser_keytab

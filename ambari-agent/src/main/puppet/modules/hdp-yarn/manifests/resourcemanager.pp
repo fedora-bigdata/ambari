@@ -23,7 +23,7 @@ class hdp-yarn::resourcemanager(
   $opts = {}
 ) inherits hdp-yarn::params
 {
-  $yarn_user = $hdp-yarn::params::yarn_user
+  $yarn_user = $hdp_yarn::params::yarn_user
   
   if ($service_state == 'no_op') {
   } elsif ($service_state in 'installed_and_configured') {

@@ -24,7 +24,7 @@ class hdp-sqoop::mysql-connector()
   include hdp-hive::params
 
   $target = "${hdp::params::artifact_dir}/${zip_name}"
-  $sqoop_lib = $hdp-sqoop::params::sqoop_lib
+  $sqoop_lib = $hdp_sqoop::params::sqoop_lib
 
   anchor { 'hdp-sqoop::mysql-connector::begin':}
 

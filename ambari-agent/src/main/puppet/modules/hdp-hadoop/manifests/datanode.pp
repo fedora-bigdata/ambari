@@ -38,7 +38,7 @@ class hdp-hadoop::datanode(
 
   if ($service_state == 'no_op') {
   } elsif ($service_state in ['running','stopped','installed_and_configured','uninstalled']) { 
-    $dfs_data_dir = $hdp-hadoop::params::dfs_data_dir
+    $dfs_data_dir = $hdp_hadoop::params::dfs_data_dir
   
     if (($hdp::params::service_exists['hdp-hadoop::namenode'] == true) or ($hdp::params::service_exists['hdp-hadoop::snamenode'] == true)){
       $a_namenode_on_node = true
@@ -56,7 +56,7 @@ class hdp-hadoop::datanode(
         masterhost => $masterHost,
         keytabdst => "${$keytab_path}/dn.service.keytab",
         keytabfile => 'dn.service.keytab',
-        owner => $hdp-hadoop::params::hdfs_user
+        owner => $hdp_hadoop::params::hdfs_user
       }
     }
 
@@ -75,7 +75,7 @@ class hdp-hadoop::datanode(
     
     hdp-hadoop::service{ 'datanode':
       ensure         => $service_state,
-      user           => $hdp-hadoop::params::hdfs_user,
+      user           => $hdp_hadoop::params::hdfs_user,
       create_pid_dir => $create_pid_dir,
       create_log_dir => $create_log_dir
     }
@@ -91,7 +91,7 @@ define hdp-hadoop::datanode::create_data_dirs($service_state)
 {
   $dirs = hdp_array_from_comma_list($name)
   hdp::directory_recursive_create_ignore_failure { $dirs :
-    owner => $hdp-hadoop::params::hdfs_user,
+    owner => $hdp_hadoop::params::hdfs_user,
     mode => '0750',
     service_state => $service_state,
     force => true

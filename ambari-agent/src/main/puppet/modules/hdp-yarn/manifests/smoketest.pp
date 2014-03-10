@@ -22,12 +22,12 @@ define hdp-yarn::smoketest(
   $component_name = undef
 )
 {
-  $rm_webui_address = $hdp-yarn::params::rm_webui_address
-  $rm_webui_https_address = $hdp-yarn::params::rm_webui_https_address
-  $nm_webui_address = $hdp-yarn::params::nm_webui_address
-  $hs_webui_address = $hdp-yarn::params::hs_webui_address
+  $rm_webui_address = $hdp_yarn::params::rm_webui_address
+  $rm_webui_https_address = $hdp_yarn::params::rm_webui_https_address
+  $nm_webui_address = $hdp_yarn::params::nm_webui_address
+  $hs_webui_address = $hdp_yarn::params::hs_webui_address
   
-  $hadoop_ssl_enabled = $hdp-hadoop::params::hadoop_ssl_enabled
+  $hadoop_ssl_enabled = $hdp_hadoop::params::hadoop_ssl_enabled
 
   if ($component_name == 'resourcemanager') {
     $component_type = 'rm'

@@ -35,18 +35,18 @@ class hdp(
 
  ## Port settings
   if has_key($configuration, 'hdfs-site') {
-    $hdfs-site = $configuration['hdfs-site']
+    $hdfs_site = $configuration['hdfs-site']
 
     if (hdp_get_major_stack_version($stack_version) >= 2) {
-      $namenode_port = hdp_get_port_from_url($hdfs-site["dfs.namenode.http-address"])
-      $snamenode_port = hdp_get_port_from_url($hdfs-site["dfs.namenode.secondary.http-address"])
+      $namenode_port = hdp_get_port_from_url($hdfs_site["dfs.namenode.http-address"])
+      $snamenode_port = hdp_get_port_from_url($hdfs_site["dfs.namenode.secondary.http-address"])
     } else {
-      $namenode_port = hdp_get_port_from_url($hdfs-site["dfs.http.address"])
-      $snamenode_port = hdp_get_port_from_url($hdfs-site["dfs.secondary.http.address"])
+      $namenode_port = hdp_get_port_from_url($hdfs_site["dfs.http.address"])
+      $snamenode_port = hdp_get_port_from_url($hdfs_site["dfs.secondary.http.address"])
     }
 
-    $datanode_port = hdp_get_port_from_url($hdfs-site["dfs.datanode.http.address"])
-    $journalnode_port = hdp_get_port_from_url($hdfs-site["dfs.journalnode.http-address"])
+    $datanode_port = hdp_get_port_from_url($hdfs_site["dfs.datanode.http.address"])
+    $journalnode_port = hdp_get_port_from_url($hdfs_site["dfs.journalnode.http-address"])
   } else {
     $namenode_port = "50070"
     $snamenode_port = "50090"
@@ -55,25 +55,25 @@ class hdp(
   }
 
   if has_key($configuration, 'mapred-site') {
-    $mapred-site = $configuration['mapred-site']
+    $mapred_site = $configuration['mapred-site']
 
     if (hdp_get_major_stack_version($stack_version) >= 2) {
-      $jtnode_port = hdp_get_port_from_url($mapred-site["mapreduce.jobtracker.http.address"],"50030")
-      $tasktracker_port = hdp_get_port_from_url($mapred-site["mapreduce.tasktracker.http.address"],"50060")
+      $jtnode_port = hdp_get_port_from_url($mapred_site["mapreduce.jobtracker.http.address"],"50030")
+      $tasktracker_port = hdp_get_port_from_url($mapred_site["mapreduce.tasktracker.http.address"],"50060")
     } else {
-      $jtnode_port = hdp_get_port_from_url($mapred-site["mapred.job.tracker.http.address"],"50030")
-      $tasktracker_port = hdp_get_port_from_url($mapred-site["mapred.task.tracker.http.address"],"50060")
+      $jtnode_port = hdp_get_port_from_url($mapred_site["mapred.job.tracker.http.address"],"50030")
+      $tasktracker_port = hdp_get_port_from_url($mapred_site["mapred.task.tracker.http.address"],"50060")
     }
-    $jobhistory_port = hdp_get_port_from_url($mapred-site["mapreduce.history.server.http.address"],"51111")
+    $jobhistory_port = hdp_get_port_from_url($mapred_site["mapreduce.history.server.http.address"],"51111")
 
-    $hs_port = hdp_get_port_from_url($mapred-site["mapreduce.jobhistory.webapp.address"],"19888")
+    $hs_port = hdp_get_port_from_url($mapred_site["mapreduce.jobhistory.webapp.address"],"19888")
   }
 
   if has_key($configuration, 'yarn-site') {
-    $yarn-site = $configuration['yarn-site']
-    $rm_port = hdp_get_port_from_url($yarn-site["yarn.resourcemanager.webapp.address"],"8088")
-    $rm_https_port = hdp_get_port_from_url($yarn-site["yarn.resourcemanager.webapp.https.address"],"8090")
-    $nm_port = hdp_get_port_from_url($yarn-site["yarn.nodemanager.webapp.address"],"8042")
+    $yarn_site = $configuration['yarn-site']
+    $rm_port = hdp_get_port_from_url($yarn_site["yarn.resourcemanager.webapp.address"],"8088")
+    $rm_https_port = hdp_get_port_from_url($yarn_site["yarn.resourcemanager.webapp.https.address"],"8090")
+    $nm_port = hdp_get_port_from_url($yarn_site["yarn.nodemanager.webapp.address"],"8042")
   }
 
   $hbase_master_port = hdp_default("hbase-site/hbase.master.info.port","60010")

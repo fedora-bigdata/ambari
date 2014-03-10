@@ -31,8 +31,8 @@ class hdp-zookeeper(
      $hdp::params::service_exists['hdp-zookeeper'] = true
   }
  } elsif ($service_state in ['running','stopped','installed_and_configured','uninstalled']) { 
-   $zk_user = $hdp-zookeeper::params::zk_user
-   $zk_config_dir = $hdp-zookeeper::params::conf_dir
+   $zk_user = $hdp_zookeeper::params::zk_user
+   $zk_config_dir = $hdp_zookeeper::params::conf_dir
  
    anchor{'hdp-zookeeper::begin':}
    anchor{'hdp-zookeeper::end':}
@@ -127,7 +127,7 @@ define hdp-zookeeper::configfile(
 {
   hdp::configfile { "${hdp-zookeeper::params::conf_dir}/${name}":
     component       => 'zookeeper',
-    owner           => $hdp-zookeeper::params::zk_user,
+    owner           => $hdp_zookeeper::params::zk_user,
     mode            => $mode
   }
 }

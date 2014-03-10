@@ -42,7 +42,7 @@ class hdp-dashboard(
         java_needed => 'false',
         size => 64
        }
-     $conf_dir =  $hdp-dashboard::params::conf_dir
+     $conf_dir =  $hdp_dashboard::params::conf_dir
   
      hdp::directory_recursive_create { $conf_dir :
        service_state => $service_state,

@@ -22,8 +22,8 @@ class hdp-templeton::download-hive-tar()
 {
   include hdp-templeton::params
 
-  $src_tar_name = $hdp-templeton::params::src_hive_tar_name
-  $dest_tar_name = $hdp-templeton::params::dest_hive_tar_name
+  $src_tar_name = $hdp_templeton::params::src_hive_tar_name
+  $dest_tar_name = $hdp_templeton::params::dest_hive_tar_name
   $target = "${hdp::params::artifact_dir}/${dest_tar_name}"
  
   anchor { 'hdp-templeton::download-hive-tar::begin':}         

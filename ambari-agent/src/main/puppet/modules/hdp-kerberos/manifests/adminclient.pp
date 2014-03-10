@@ -106,7 +106,7 @@ define hdp-kerberos::keytab(
   exec { "xst ${keytab}":
     command => "rm -rf ${keytab_filename}; ${kadmin_cmd} -q 'xst -k ${keytab_filename} ${principals_list}'; chown puppet:apache ${keytab_filename}",
     unless  => "klist -kt ${keytab_filename} 2>/dev/null | grep -q ' ${principals[0]}'", #TODO may make more robust test
-    path   => $hdp-kerberos::params::exec_path,
+    path   => $hdp_kerberos::params::exec_path,
   }
 
   if (($keytable_file_owner != undef) or ($keytable_file_mode != undef)) {
@@ -135,6 +135,6 @@ define hdp-kerberos::principal(
   exec { "addprinc ${principal}":
     command => "${kadmin_cmd} -q 'addprinc -randkey ${principal}'",
     unless => "${kadmin_cmd} -q listprincs | grep -q '^${principal}$'",
-    path => $hdp-kerberos::params::exec_path
+    path => $hdp_kerberos::params::exec_path
   }
 }

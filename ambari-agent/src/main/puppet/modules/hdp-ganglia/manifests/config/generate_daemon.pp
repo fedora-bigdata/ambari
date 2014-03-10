@@ -26,7 +26,7 @@ define hdp-ganglia::config::generate_daemon(
   $group = $hdp::params::user_group
 )
 {
-  $shell_cmds_dir = $hdp-ganglia::params::ganglia_shell_cmds_dir
+  $shell_cmds_dir = $hdp_ganglia::params::ganglia_shell_cmds_dir
   $cmd = $ganglia_service ? {
     'gmond'  => $role ? {
       'server' => "${shell_cmds_dir}/setupGanglia.sh -c ${name} -m -o ${owner} -g ${group}",

@@ -23,14 +23,14 @@ class hdp-hue::service(
   $initial_wait = undef
 )
 {
-  include $hdp-hue::params
+  include $hdp_hue::params
 
-  $hue_user = $hdp-hue::params::hue_server_user
+  $hue_user = $hdp_hue::params::hue_server_user
   $hue_start_cmd = "/etc/init.d/hue start --USER=${hue_user} --LOGDIR=${hue_log_dir} --LOCKFILE=${hue_lock_file} --PIDFILE=${hue_pid_dir}/supervisor.pid"
   $hue_stop_cmd = "/etc/init.d/hue stop"
 
-  $pid_dir = $hdp-hue::params::hue_pid_dir
-  $log_dir = $hdp-hue::params::hue_log_dir
+  $pid_dir = $hdp_hue::params::hue_pid_dir
+  $log_dir = $hdp_hue::params::hue_log_dir
   $pid_file = "${pid_dir}/supervisor.pid"
   $no_op_test = "ls ${pid_file} >/dev/null 2>&1 && ps `cat ${pid_file}` >/dev/null 2>&1"
 
@@ -68,7 +68,7 @@ define hdp-hue::service::directory(
 )
 {
   hdp::directory_recursive_create { $name:
-    owner => $hdp-hue::params::hue_server_user,
+    owner => $hdp_hue::params::hue_server_user,
     mode => '0755',
     service_state => $service_state,
     force => true

@@ -23,7 +23,7 @@ class hdp-yarn::historyserver(
   $opts = {}
 ) inherits hdp-yarn::params
 {
-  $mapred_user = $hdp-yarn::params::mapred_user
+  $mapred_user = $hdp_yarn::params::mapred_user
   
   if ($service_state == 'no_op') {
   } elsif ($service_state in 'installed_and_configured') {

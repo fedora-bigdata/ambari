@@ -21,7 +21,7 @@
 class hdp-yarn::mapred2::service_check() inherits hdp-yarn::params
 {
   $smoke_test_user = $hdp::params::smokeuser
-  $hadoopMapredExamplesJarName = $hdp-yarn::params::hadoopMapredExamplesJarName
+  $hadoopMapredExamplesJarName = $hdp_yarn::params::hadoopMapredExamplesJarName
   $jar_path = "$hdp::params::hadoop_mapred2_jar_location/$hadoopMapredExamplesJarName"
   $input_file = "/user/${smoke_test_user}/mapredsmokeinput"
   $output_file = "/user/${smoke_test_user}/mapredsmokeoutput"
