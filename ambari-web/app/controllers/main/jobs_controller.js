@@ -249,7 +249,7 @@ App.MainJobsController = Em.ArrayController.extend({
     var yarnService = App.YARNService.find().objectAt(0);
     if (yarnService != null) {
       this.set('loading', true);
-      var historyServerHostName = yarnService.get('resourceManagerNode.hostName');
+      var historyServerHostName = yarnService.get('appTimelineServerNode.hostName');
       var filtersLink = this.get('filterObject').createJobsFiltersLink();
       var hiveQueriesUrl = App.testMode ? "/data/jobs/hive-queries.json" : "/proxy?url=http://" + historyServerHostName
           + ":" + yarnService.get('ahsWebPort') + "/ws/v1/timeline/HIVE_QUERY_ID" + filtersLink;
@@ -260,7 +260,7 @@ App.MainJobsController = Em.ArrayController.extend({
           var sortColumn = self.get('sortingColumn');
           if(sortColumn && sortColumn.get('status')){
             var sortColumnStatus = sortColumn.get('status');
-            sortColumn.set('content', self.get('content'));
+            sortColumn.get('parentView').set('content', self.get('content'));
             sortColumn.get('parentView').sort(sortColumn, sortColumnStatus === "sorting_desc");
             sortColumn.set('status', sortColumnStatus);
             self.set('content',sortColumn.get('parentView').get('content'));

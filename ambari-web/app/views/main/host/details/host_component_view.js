@@ -66,33 +66,6 @@ App.HostComponentView = Em.View.extend({
   }.property('content.passiveState','workStatus'),
 
   /**
-   * Returns message for health tooltip
-   * in addition to workStatus it also displays passive state of component
-   * @type {String}
-   */
-  componentStatusTooltip: function() {
-    if (this.get('content.passiveState') != 'OFF') {
-      return Em.I18n.t('hosts.component.passive.short.mode');
-    } else {
-      return this.get('componentTextStatus');
-    }
-  }.property('componentTextStatus','content.passiveState'),
-
-  /**
-   * @type {String}
-   */
-  passiveImpliedTextStatus: function() {
-    if(this.get('parentView.content.passiveState') === 'ON') {
-      return Em.I18n.t('hosts.component.passive.implied.host.mode.tooltip');
-    }
-    else
-      if(this.get('content.service.passiveState') === 'ON') {
-        return Em.I18n.t('hosts.component.passive.implied.service.mode.tooltip').format(this.get('content.service.serviceName'));
-      }
-    return '';
-  }.property('content.passiveState','parentView.content.passiveState'),
-
-  /**
    * CSS-class for host component status
    * @type {String}
    */
@@ -107,15 +80,10 @@ App.HostComponentView = Em.View.extend({
       return 'health-status-color-blue icon-cog';
     }
 
-    //Class when maintenance
-    if (this.get('content.passiveState') != "OFF") {
-      return 'icon-medkit';
-    }
-
     //For all other cases
     return 'health-status-' + App.HostComponentStatus.getKeyName(this.get('workStatus'));
 
-  }.property('content.passiveState','workStatus'),
+  }.property('workStatus'),
 
   /**
    * CSS-class for disabling drop-down menu with list of host component actions
@@ -147,7 +115,7 @@ App.HostComponentView = Em.View.extend({
    * @type {bool}
    */
   isStart: function () {
-    return (this.get('workStatus') == App.HostComponentStatus.started || this.get('workStatus') == App.HostComponentStatus.starting);
+    return [App.HostComponentStatus.started, App.HostComponentStatus.starting].contains(this.get('workStatus'));
   }.property('workStatus'),
 
   /**
@@ -164,6 +132,14 @@ App.HostComponentView = Em.View.extend({
    */
   isInstalling: function () {
     return (this.get('workStatus') == App.HostComponentStatus.installing);
+  }.property('workStatus'),
+
+  /**
+   * For Init state
+   * @type {bool}
+   */
+  isInit: function() {
+    return this.get('workStatus') == App.HostComponentStatus.init;
   }.property('workStatus'),
 
   /**
@@ -217,8 +193,8 @@ App.HostComponentView = Em.View.extend({
    * @type {bool}
    */
   isDeleteComponentDisabled: function () {
-    return ![App.HostComponentStatus.stopped, App.HostComponentStatus.unknown, App.HostComponentStatus.install_failed, App.HostComponentStatus.upgrade_failed].contains(this.get('workStatus'));
-  }.property('workStatus'),
+    return !(this.get('isComponentRecommissionAvailable') || [App.HostComponentStatus.stopped, App.HostComponentStatus.unknown, App.HostComponentStatus.install_failed, App.HostComponentStatus.upgrade_failed, App.HostComponentStatus.init].contains(this.get('workStatus')));
+  }.property('workStatus','isComponentRecommissionAvailable'),
 
   /**
    * Check if component may be reassinged to another host

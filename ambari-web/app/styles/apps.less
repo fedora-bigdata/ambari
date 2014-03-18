@@ -406,6 +406,7 @@
     .id {
       width: 100%;
       overflow: auto;
+      word-wrap: break-word;
     }
     td:first-child,
     th:first-child {
@@ -535,6 +536,12 @@
         visibility: hidden;
       }
     }
+  }
+}
+
+.jobs-tooltip {
+  .tooltip-inner {
+    max-width: 400px;
   }
 }
 

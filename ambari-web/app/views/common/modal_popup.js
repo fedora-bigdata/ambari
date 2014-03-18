@@ -29,7 +29,9 @@ App.ModalPopup = Ember.View.extend({
   primary: Em.I18n.t('ok'),
   secondary: Em.I18n.t('common.cancel'),
   autoHeight: true,
-  enablePrimary: true,
+  disablePrimary: false,
+  disableSecondary: false,
+  primaryClass: 'btn-success',
   onPrimary: function () {
     this.hide();
   },
@@ -103,7 +105,7 @@ App.showReloadPopup = function () {
     secondary: null,
     showFooter: false,
     header: this.t('app.reloadPopup.header'),
-    body: "<div class='alert alert-info'><div class='spinner'><span>" + this.t('app.reloadPopup.text') + "</span></div></div><div><a href='#' onclick='location.reload();'>" + this.t('app.reloadPopup.link') + "</a></div>",
+    body: "<div id='reload_popup' class='alert alert-info'><div class='spinner'><span>" + this.t('app.reloadPopup.text') + "</span></div></div><div><a href='#' onclick='location.reload();'>" + this.t('app.reloadPopup.link') + "</a></div>",
     encodeBody: false
   });
 };
@@ -128,6 +130,53 @@ App.showConfirmationPopup = function (primary, body, secondary) {
       this.hide();
       primary();
     },
+    onSecondary: function () {
+      this.hide();
+      if (secondary) {
+        secondary();
+      }
+    }
+  });
+};
+
+/**
+ * Show confirmation popup
+ * After sending command watch status of query,
+ * and in case of failure provide ability to retry to launch an operation.
+ *
+ * @param {Function} primary - "OK" button click handler
+ * @param {Function} secondary - "Cancel" button click handler
+ * @return {*}
+ */
+App.showConfirmationFeedBackPopup = function (primary, secondary) {
+  if (!primary) {
+    return false;
+  }
+  return App.ModalPopup.show({
+    header: Em.I18n.t('popup.confirmation.commonHeader'),
+    bodyClass: Em.View.extend({
+      templateName: require('templates/common/confirmation_feedback')
+    }),
+    query: Em.Object.create({status: "INIT"}),
+    onPrimary: function () {
+      this.set('query.status', "INIT");
+      this.set('disablePrimary', true);
+      this.set('disableSecondary', true);
+      this.set('statusMessage', Em.I18n.t('popup.confirmationFeedBack.sending'));
+      primary(this.get('query'));
+    },
+    statusMessage: Em.I18n.t('question.sure'),
+    watchStatus: function() {
+      if (this.get('query.status') === "SUCCESS") {
+        this.hide();
+      } else if(this.get('query.status') === "FAIL") {
+        this.set('primaryClass', 'btn-primary');
+        this.set('primary', Em.I18n.t('common.retry'));
+        this.set('disablePrimary', false);
+        this.set('disableSecondary', false);
+        this.set('statusMessage', Em.I18n.t('popup.confirmationFeedBack.query.fail'));
+      }
+    }.observes('query.status'),
     onSecondary: function () {
       this.hide();
       if (secondary) {

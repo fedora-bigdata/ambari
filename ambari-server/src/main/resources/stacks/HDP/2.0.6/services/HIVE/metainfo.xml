@@ -135,7 +135,16 @@
           </packages>
         </osSpecific>
         <osSpecific>
-          <osType>suse</osType>
+          <osType>suse11</osType>
+          <packages>
+            <package>
+              <type>rpm</type>
+              <name>mysql-client</name>
+            </package>
+          </packages>
+        </osSpecific>
+        <osSpecific>
+          <osType>sles11</osType>
           <packages>
             <package>
               <type>rpm</type>
@@ -188,6 +197,11 @@
         <scriptType>PYTHON</scriptType>
         <timeout>300</timeout>
       </commandScript>
+      <configuration-dependencies>
+        <config-type>hive-site</config-type>
+        <config-type>hive-log4j</config-type>
+        <config-type>hive-exec-log4j</config-type>
+      </configuration-dependencies>
     </service>
 
   </services>

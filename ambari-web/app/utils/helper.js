@@ -152,6 +152,19 @@ App.parseJSON = function (value) {
   }
   return value;
 };
+/**
+ * Check for empty <code>Object</code>, built in Em.isEmpty()
+ * doesn't support <code>Object</code> type
+ *
+ * @params obj {Object}
+ *
+ * @return {Boolean}
+ */
+App.isEmptyObject = function(obj) {
+  var empty = true;
+  for (var prop in obj) { if (obj.hasOwnProperty(prop)) {empty = false; break;} }
+  return empty;
+}
 
 App.format = {
 
@@ -425,6 +438,34 @@ App.registerBoundHelper('formatNull', Em.View.extend({
 }));
 
 /**
+ * Return formatted string with inserted <code>wbr</code>-tag after each dot
+ *
+ * @param {String} content
+ *
+ * Examples:
+ *
+ * returns 'apple'
+ * {{formatWordBreak 'apple'}}
+ *
+ * returns 'apple.<wbr />banana'
+ * {{formatWordBreak 'apple.banana'}}
+ *
+ * returns 'apple.<wbr />banana.<wbr />uranium'
+ * {{formatWordBreak 'apple.banana.uranium'}}
+ */
+App.registerBoundHelper('formatWordBreak', Em.View.extend({
+  tagName: 'span',
+  template: Em.Handlebars.compile('{{{view.result}}}'),
+
+  /**
+   * @type {string}
+   */
+  result: function() {
+    return this.get('content').replace(/\./g, '.<wbr />');
+  }.property('content')
+}));
+
+/**
  * Ambari overrides the default date transformer.
  * This is done because of the non-standard data
  * sent. For example Nagios sends date as "12345678".
@@ -435,15 +476,18 @@ App.registerBoundHelper('formatNull', Em.View.extend({
 DS.attr.transforms.date = {
   from: function (serialized) {
     var type = typeof serialized;
-    if (type === "string") {
+    if (type === Em.I18n.t('common.type.string')) {
       serialized = parseInt(serialized);
       type = typeof serialized;
     }
-    if (type === "number") {
+    if (type === Em.I18n.t('common.type.number')) {
+      if (!serialized ){  //serialized timestamp = 0;
+        return 0;
+      }
       // The number could be seconds or milliseconds.
-      // If seconds, then multiplying with 1000 should still
-      // keep it below the current time.
-      if (serialized * 1000 < App.dateTime()) {
+      // If seconds, then the length is 10
+      // If milliseconds, the length is 13
+      if (serialized.toString().length < 13) {
         serialized = serialized * 1000;
       }
       return new Date(serialized);

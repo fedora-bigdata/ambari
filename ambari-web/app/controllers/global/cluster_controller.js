@@ -116,7 +116,8 @@ App.ClusterController = Em.Controller.extend({
     var clientClock = new Date().getTime();
     var serverClock = (data.RootServiceComponents.server_clock).toString();
     serverClock = serverClock.length < 13? serverClock+ '000': serverClock;
-    App.set('clockDistance', serverClock - clientClock );
+    App.set('clockDistance', serverClock - clientClock);
+    App.set('currentServerTime', parseInt(serverClock));
     console.log('loading ambari server clock distance');
   },
   getServerClockErrorCallback: function () {
@@ -232,6 +233,7 @@ App.ClusterController = Em.Controller.extend({
       callback();
       return false;
     }
+    App.set('currentServerTime', App.get('currentServerTime') + App.componentsUpdateInterval);
     var testUrl = App.get('isHadoop2Stack') ? '/data/hosts/HDP2/hc_host_status.json' : '/data/dashboard/services.json';
     var statusUrl = '/hosts?fields=Hosts/host_status,Hosts/maintenance_state,host_components/HostRoles/state,host_components/HostRoles/maintenance_state,alerts/summary&minimal_response=true';
     if (isInitialLoad) {
@@ -282,6 +284,7 @@ App.ClusterController = Em.Controller.extend({
     }
 
     if(this.get('isLoaded')) { // do not load data repeatedly
+      App.router.get('mainController').startPolling();
       return;
     }
     var clusterUrl = this.getUrl('/data/clusters/cluster.json', '?fields=Clusters');
@@ -345,7 +348,6 @@ App.ClusterController = Em.Controller.extend({
       }, true);
       App.router.get('updateController').updateServiceMetric(function () {}, true);
     });
-
   },
   /**
    * json from serviceMetricsMapper on initial load

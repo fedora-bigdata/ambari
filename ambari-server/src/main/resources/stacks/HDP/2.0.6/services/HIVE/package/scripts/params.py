@@ -46,7 +46,7 @@ check_db_connection_jar = format("/usr/lib/ambari-agent/{check_db_connection_jar
 #common
 hive_metastore_port = config['configurations']['global']['hive_metastore_port']
 hive_var_lib = '/var/lib/hive'
-hive_server_host = config['clusterHostInfo']['hive_server_host']
+hive_server_host = config['clusterHostInfo']['hive_server_host'][0]
 hive_url = format("jdbc:hive2://{hive_server_host}:10000")
 
 smokeuser = config['configurations']['global']['smokeuser']
@@ -107,12 +107,14 @@ mysql_host = config['clusterHostInfo']['hive_mysql_host']
 mysql_adduser_path = "/tmp/addMysqlUser.sh"
 
 ########## HCAT
-if config['hostLevelParams']['stack_version'] == '2.1.1':
-  hcat_conf_dir = '/etc/hive-hcatalog/conf'
-  hcat_lib = '/usr/lib/hive-hcatalog/share/hcatalog'
-else:
+
+if str(config['hostLevelParams']['stack_version']).startswith('2.0'):
   hcat_conf_dir = '/etc/hcatalog/conf'
   hcat_lib = '/usr/lib/hcatalog/share/hcatalog'
+# for newer versions
+else:
+  hcat_conf_dir = '/etc/hive-hcatalog/conf'
+  hcat_lib = '/usr/lib/hive-hcatalog/share/hcatalog'
 
 
 metastore_port = 9933

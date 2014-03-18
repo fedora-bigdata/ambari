@@ -27,9 +27,6 @@ var InitialData =  {
       'displayLength': {},
       'startIndex': {},
       'sortingConditions': {}
-    },
-    'access': {
-      'showJobsForNonAdmin': ''
     }
   },
 
@@ -176,13 +173,6 @@ App.db.setDisplayLength = function(name, displayLength) {
     App.db.data.app.tables.displayLength = {};
   }
   App.db.data.app.tables.displayLength[name] = displayLength;
-  localStorage.setObject('ambari', App.db.data);
-};
-
-App.db.setShowJobsForNonAdmin = function(showJobsForNonAdmin) {
-  console.log('TRACE: Entering db:setShowJobsForNonAdmin function');
-  App.db.data = localStorage.getObject('ambari');
-  App.db.data.app.access.showJobsForNonAdmin = showJobsForNonAdmin;
   localStorage.setObject('ambari', App.db.data);
 };
 
@@ -369,12 +359,12 @@ App.db.setDisableSecurityStatus = function (status) {
   localStorage.setObject('ambari', App.db.data);
 };
 
-App.db.setSecurityDeployStages = function (securityStages) {
+App.db.setSecurityDeployCommands = function (commands) {
   App.db.data = localStorage.getObject('ambari');
   if (!App.db.data.AddSecurity) {
     App.db.data.AddSecurity = {};
   }
-  App.db.data.AddSecurity.securityDeployStages = securityStages;
+  App.db.data.AddSecurity.securityDeployCommands = commands;
   localStorage.setObject('ambari', App.db.data);
 };
 
@@ -564,15 +554,6 @@ App.db.getDisplayLength = function(name) {
   return null;
 };
 
-App.db.getShowJobsForNonAdmin = function() {
-  console.log('TRACE: Entering db:getShowJobsForNonAdmin function');
-  App.db.data = localStorage.getObject('ambari');
-  if (App.db.data.app.access && typeof (App.db.data.app.access.showJobsForNonAdmin) ==  "boolean") {
-    return App.db.data.app.access.showJobsForNonAdmin;
-  }
-  return true;
-};
-
 App.db.getStartIndex = function(name) {
   console.log('TRACE: Entering db:getStartIndex function');
   App.db.data = localStorage.getObject('ambari');
@@ -716,9 +697,9 @@ App.db.getDisableSecurityStatus = function () {
   return App.db.data.AddSecurity.disableSecurityStatus;
 };
 
-App.db.getSecurityDeployStages = function () {
+App.db.getSecurityDeployCommands = function () {
   App.db.data = localStorage.getObject('ambari');
-  return App.db.data.AddSecurity.securityDeployStages;
+  return App.db.data.AddSecurity.securityDeployCommands;
 };
 
 App.db.getSecureConfigProperties = function () {

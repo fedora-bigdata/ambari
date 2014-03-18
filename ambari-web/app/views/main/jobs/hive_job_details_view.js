@@ -20,6 +20,7 @@ var date = require('utils/date');
 var numberUtils = require('utils/number_utils');
 var dateUtils = require('utils/date');
 var stringUtils = require('utils/string_utils');
+var sort = require('views/common/sort_view');
 
 App.MainHiveJobDetailsView = Em.View.extend({
   templateName : require('templates/main/jobs/hive_job_details'),
@@ -49,20 +50,33 @@ App.MainHiveJobDetailsView = Em.View.extend({
   }.property('showQuery'),
 
   summaryMetricType: 'input',
-  summaryMetricTypesDisplay : [ Em.I18n.t('jobs.hive.tez.metric.input'), Em.I18n.t('jobs.hive.tez.metric.output'), Em.I18n.t('jobs.hive.tez.metric.recordsRead'),
-                                Em.I18n.t('jobs.hive.tez.metric.recordsWrite'), Em.I18n.t('jobs.hive.tez.metric.tezTasks') ],
+  summaryMetricTypesDisplay : [
+    Em.I18n.t('jobs.hive.tez.metric.input'),
+    Em.I18n.t('jobs.hive.tez.metric.output'),
+   /* Em.I18n.t('jobs.hive.tez.metric.recordsRead'),
+    Em.I18n.t('jobs.hive.tez.metric.recordsWrite'), */
+    Em.I18n.t('jobs.hive.tez.metric.tezTasks'),
+    Em.I18n.t('jobs.hive.tez.metric.spilledRecords')
+  ],
   summaryMetricTypeDisplay: function(){
     return Em.I18n.t('jobs.hive.tez.metric.'+this.get('summaryMetricType'));
   }.property('summaryMetricType'),
 
   sortedVertices : function() {
-    var vertices = this.get('content.tezDag.vertices');
+    var sortColumn = this.get('controller.sortingColumn');
+    if(sortColumn && sortColumn.get('status')){
+      var sortColumnStatus = sortColumn.get('status');
+      var sorted = sortColumn.get('parentView').sort(sortColumn, sortColumnStatus === "sorting_desc", true);
+      sortColumn.set('status', sortColumnStatus);
+      return sorted;
+    }
+    var vertices = this.get('controller.content.tezDag.vertices');
     if (vertices != null) {
       vertices = vertices.toArray();
-      return vertices.sortProperty('name');
+      return vertices;
     }
     return vertices;
-  }.property('content.tezDag.vertices'),
+  }.property('content.tezDag.vertices','controller.sortingColumn'),
 
   initialDataLoaded : function() {
     var loaded = this.get('controller.loaded');
@@ -113,6 +127,9 @@ App.MainHiveJobDetailsView = Em.View.extend({
     case Em.I18n.t('jobs.hive.tez.metric.tezTasks'):
       summaryType = 'tezTasks';
       break;
+    case Em.I18n.t('jobs.hive.tez.metric.spilledRecords'):
+      summaryType = 'spilledRecords';
+      break;
     default:
       break;
     }
@@ -158,24 +175,41 @@ App.MainHiveJobDetailsView = Em.View.extend({
     if (status) {
       status = stringUtils.getCamelCase(status);
     }
+    var fileReadOps = v.get('fileReadOps');
+    var fileWriteOps = v.get('fileWriteOps');
+    var hdfsReadOps = v.get('hdfsReadOps');
+    var hdfsWriteOps = v.get('hdfsWriteOps');
+    var naString = Em.I18n.t('common.na');
+    if (fileReadOps === null) {
+      fileReadOps = naString;
+    }
+    if (fileWriteOps === null) {
+      fileWriteOps = naString;
+    }
+    if (hdfsReadOps === null) {
+      hdfsReadOps = naString;
+    }
+    if (hdfsWriteOps === null) {
+      hdfsWriteOps = naString;
+    }
     return {
       file : {
         read : {
-          ops : Em.I18n.t('jobs.hive.tez.reads').format(v.get('fileReadOps')),
+          ops : Em.I18n.t('jobs.hive.tez.reads').format(fileReadOps),
           bytes : numberUtils.bytesToSize(v.get('fileReadBytes'))
         },
         write : {
-          ops : Em.I18n.t('jobs.hive.tez.writes').format(v.get('fileWriteOps')),
+          ops : Em.I18n.t('jobs.hive.tez.writes').format(fileWriteOps),
           bytes : numberUtils.bytesToSize(v.get('fileWriteBytes'))
         }
       },
       hdfs : {
         read : {
-          ops : Em.I18n.t('jobs.hive.tez.reads').format(v.get('hdfsReadOps')),
+          ops : Em.I18n.t('jobs.hive.tez.reads').format(hdfsReadOps),
           bytes : numberUtils.bytesToSize(v.get('hdfsReadBytes'))
         },
         write : {
-          ops : Em.I18n.t('jobs.hive.tez.writes').format(v.get('hdfsWriteOps')),
+          ops : Em.I18n.t('jobs.hive.tez.writes').format(hdfsWriteOps),
           bytes : numberUtils.bytesToSize(v.get('hdfsWriteBytes'))
         }
       },
@@ -183,8 +217,8 @@ App.MainHiveJobDetailsView = Em.View.extend({
         read : v.get('recordReadCount') == null ? null : Em.I18n.t('jobs.hive.tez.records.count').format(v.get('recordReadCount')),
         write : v.get('recordWriteCount') == null ? null : Em.I18n.t('jobs.hive.tez.records.count').format(v.get('recordWriteCount'))
       },
-      started: v.get('startTime') ? dateUtils.dateFormat(v.get('startTime')) : '',
-      ended: v.get('endTime') ? dateUtils.dateFormat(v.get('endTime')) : '',
+      started: v.get('startTime') ? dateUtils.dateFormat(v.get('startTime'), true) : '',
+      ended: v.get('endTime') ? dateUtils.dateFormat(v.get('endTime'), true) : '',
       status: status
     };
   }.property('selectedVertex.fileReadOps', 'selectedVertex.fileWriteOps', 'selectedVertex.hdfsReadOps', 'selectedVertex.hdfdWriteOps',
@@ -236,4 +270,49 @@ App.MainHiveJobDetailsView = Em.View.extend({
    doGraphMinimize: function() {
      this.set('isGraphMaximized', false);
    }
+});
+
+App.MainHiveJobDetailsVerticesTableView = App.TableView.extend({
+  sortView: sort.wrapperView,
+
+  didInsertElement: function () {
+    if(!this.get('controller.sortingColumn')){
+      var columns = this.get('childViews')[0].get('childViews')
+      if(columns && columns.findProperty('name', 'name')){
+        columns.findProperty('name','name').set('status', 'sorting_asc');
+        this.get('controller').set('sortingColumn', columns.findProperty('name','name'))
+      }
+    }
+  },
+
+  nameSort: sort.fieldView.extend({
+    column: 0,
+    name: 'name',
+    displayName: Em.I18n.t('common.name'),
+    type: 'string'
+  }),
+  tasksSort: sort.fieldView.extend({
+    column: 1,
+    name: 'tasksNumber',
+    displayName: Em.I18n.t('common.tasks'),
+    type: 'number'
+  }),
+  inputSort: sort.fieldView.extend({
+    column: 2,
+    name: 'totalReadBytesDisplay',
+    displayName: Em.I18n.t('apps.item.dag.input'),
+    type: 'number'
+  }),
+  outputSort: sort.fieldView.extend({
+    column: 3,
+    name: 'totalWriteBytesDisplay',
+    displayName: Em.I18n.t('apps.item.dag.output'),
+    type: 'number'
+  }),
+  durationSort: sort.fieldView.extend({
+    column: 4,
+    name: 'durationDisplay',
+    displayName: Em.I18n.t('apps.item.dag.duration'),
+    type: 'number'
+  })
 });

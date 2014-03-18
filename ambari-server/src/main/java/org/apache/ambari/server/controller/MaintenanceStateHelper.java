@@ -55,24 +55,39 @@ public class MaintenanceStateHelper {
   }
 
   /**
-   * Gets the effective state for a HostComponents
+   * Get effective state of HostComponent
+   * @param sch the host component
+   * @param host the host
+   * @return the maintenance state
+   * @throws AmbariException
+   */
+  public MaintenanceState getEffectiveState(ServiceComponentHost sch,
+                                            Host host) throws AmbariException {
+    Cluster cluster = clusters.getCluster(sch.getClusterName());
+    Service service = cluster.getService(sch.getServiceName());
+
+    if (null == host) // better not
+      throw new HostNotFoundException(cluster.getClusterName(), sch.getHostName());
+
+    return getEffectiveState(cluster.getClusterId(), service, host, sch);
+  }
+
+  /**
+   * Gets the effective state for a HostComponent
    * @param sch the host component
    * @return the maintenance state
    * @throws AmbariException
    */
   public MaintenanceState getEffectiveState(ServiceComponentHost sch) throws AmbariException {
     Cluster cluster = clusters.getCluster(sch.getClusterName());
-    Service service = cluster.getService(sch.getServiceName());
-    
+
     Map<String, Host> map = clusters.getHostsForCluster(cluster.getClusterName());
     if (null == map)
       return MaintenanceState.OFF;
-    
-    Host host = clusters.getHostsForCluster(cluster.getClusterName()).get(sch.getHostName());
-    if (null == host) // better not
-      throw new HostNotFoundException(cluster.getClusterName(), sch.getHostName());
-    
-    return getEffectiveState(cluster.getClusterId(), service, host, sch);
+
+    Host host = map.get(sch.getHostName());
+
+    return getEffectiveState(sch, host);
   }
   
   /**
@@ -104,6 +119,8 @@ public class MaintenanceStateHelper {
   public static Set<Map<String, String>> getMaintenanceHostComponents(Clusters clusters, Cluster cluster) throws AmbariException {
     
     Set<Map<String, String>> set = new HashSet<Map<String, String>>();
+
+    Map<String, Host> hosts = clusters.getHostsForCluster(cluster.getClusterName());
     
     for (Service service : cluster.getServices().values()) {
       for (ServiceComponent sc : service.getServiceComponents().values()) {
@@ -111,8 +128,7 @@ public class MaintenanceStateHelper {
           continue;
 
         for (ServiceComponentHost sch : sc.getServiceComponentHosts().values()) {
-          Host host = clusters.getHostsForCluster(
-              cluster.getClusterName()).get(sch.getHostName());
+          Host host = hosts.get(sch.getHostName());
           
           if (MaintenanceState.OFF != getEffectiveState(cluster.getClusterId(),
               service, host, sch)) {

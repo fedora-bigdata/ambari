@@ -39,6 +39,14 @@ App.MainMirroringController = Em.ArrayController.extend({
 
   isTargetClustersLoaded: false,
 
+  isRequiredServicesStarted: false,
+
+  isDatasetLoadingError: false,
+
+  actionsDisabled: function () {
+    return !this.get('isRequiredServicesStarted') || this.get('isDatasetLoadingError');
+  }.property('isRequiredServicesStarted', 'isDatasetLoadingError'),
+
   isLoaded: function () {
     return this.get('isDatasetsLoaded') && this.get('isTargetClustersLoaded');
   }.property('isDatasetsLoaded', 'isTargetClustersLoaded'),
@@ -46,12 +54,19 @@ App.MainMirroringController = Em.ArrayController.extend({
   datasets: App.Dataset.find(),
 
   loadData: function () {
-    this.get('datasetsData').clear();
-    this.set('clustersData', {});
-    this.set('datasetCount', 0);
-    this.set('clusterCount', 0);
-    this.loadDatasets();
-    this.loadClusters();
+    var isRequiredServicesStarted = App.Service.find().findProperty('serviceName', 'OOZIE').get('workStatus') == 'STARTED' && App.Service.find().findProperty('serviceName', 'FALCON').get('workStatus') == 'STARTED';
+    this.set('isRequiredServicesStarted', isRequiredServicesStarted);
+    if (isRequiredServicesStarted) {
+      this.set('isDatasetLoadingError', false);
+      this.get('datasetsData').clear();
+      this.set('clustersData', {});
+      this.set('datasetCount', 0);
+      this.set('clusterCount', 0);
+      this.loadDatasets();
+      this.loadClusters();
+    } else {
+      this.set('isDatasetLoadingError', true);
+    }
   },
 
   loadDatasets: function () {
@@ -93,6 +108,7 @@ App.MainMirroringController = Em.ArrayController.extend({
   },
 
   onLoadDatasetsListError: function () {
+    this.set('isDatasetLoadingError', true);
     console.error('Failed to load datasets list.');
   },
 
@@ -123,45 +139,56 @@ App.MainMirroringController = Em.ArrayController.extend({
           instances: []
         })
     );
-    App.ajax.send({
-      name: 'mirroring.dataset.get_all_instances',
-      sender: this,
-      data: {
-        dataset: parsedData.feed['@attributes'].name,
-        start: sourceCluster.validity['@attributes'].start,
-        end: sourceCluster.validity['@attributes'].end,
-        falconServer: App.get('falconServerURL')
-      },
-      success: 'onLoadDatasetInstancesSuccess',
-      error: 'onLoadDatasetsInstancesError'
-    });
+    var currentDate = new Date(App.dateTime());
+    if (currentDate > new Date(sourceCluster.validity['@attributes'].start)) {
+      App.ajax.send({
+        name: 'mirroring.dataset.get_all_instances',
+        sender: this,
+        data: {
+          dataset: parsedData.feed['@attributes'].name,
+          start: sourceCluster.validity['@attributes'].start,
+          end: App.router.get('mainMirroringEditDataSetController').toTZFormat(currentDate),
+          falconServer: App.get('falconServerURL')
+        },
+        success: 'onLoadDatasetInstancesSuccess',
+        error: 'onLoadDatasetsInstancesError'
+      });
+    } else {
+      this.saveDataset();
+    }
   },
 
   onLoadDatasetDefinitionError: function () {
+    this.set('isDatasetLoadingError', true);
     console.error('Failed to load dataset definition.');
   },
 
   onLoadDatasetInstancesSuccess: function (data, sender, opts) {
     var datasetsData = this.get('datasetsData');
-    if (data.instances) {
+    if (data && data.instances) {
       var datasetJobs = [];
       data.instances.forEach(function (instance) {
-        datasetJobs.push({
-          dataset: opts.dataset,
-          id: instance.instance + '_' + opts.dataset,
-          name: instance.instance,
-          status: instance.status,
-          endTime: new Date(instance.endTime).getTime(),
-          startTime: new Date(instance.startTime).getTime()
-        });
+        if (instance.cluster == App.get('clusterName')) {
+          datasetJobs.push({
+            dataset: opts.dataset,
+            id: instance.instance + '_' + opts.dataset,
+            name: instance.instance,
+            status: instance.status,
+            endTime: new Date(instance.endTime).getTime(),
+            startTime: new Date(instance.startTime).getTime()
+          });
+        }
       }, this);
       datasetsData.findProperty('name', opts.dataset).set('instances', datasetJobs);
     }
+    this.saveDataset();
+  },
+
+  saveDataset: function () {
     this.set('datasetCount', this.get('datasetCount') - 1);
     if (this.get('datasetCount') < 1) {
-      var sortedDatasets = [];
-      App.dataSetMapper.map(datasetsData);
-      sortedDatasets = App.Dataset.find().toArray().sortProperty('name');
+      App.dataSetMapper.map(this.get('datasetsData'));
+      var sortedDatasets = App.Dataset.find().toArray().sortProperty('name');
       this.set('isDatasetsLoaded', true);
       var selectedDataset = this.get('selectedDataset');
       if (!selectedDataset) {
@@ -172,6 +199,7 @@ App.MainMirroringController = Em.ArrayController.extend({
 
   onLoadDatasetsInstancesError: function () {
     console.error('Failed to load dataset instances.');
+    this.saveDataset();
   },
 
   loadClusters: function () {
@@ -210,14 +238,15 @@ App.MainMirroringController = Em.ArrayController.extend({
       }, this);
     } else {
       var defaultFS = this.loadDefaultFS();
+      var clusterName = App.get('clusterName');
       var sourceCluster = Ember.Object.create({
-        name: App.get('clusterName'),
+        name: clusterName,
         execute: App.HostComponent.find().findProperty('componentName', 'RESOURCEMANAGER').get('host.hostName') + ':8050',
         readonly: 'hftp://' + App.HostComponent.find().findProperty('componentName', 'NAMENODE').get('host.hostName') + ':50070',
         workflow: 'http://' + App.HostComponent.find().findProperty('componentName', 'OOZIE_SERVER').get('host.hostName') + ':11000/oozie',
         write: defaultFS,
-        staging: '/apps/falcon/sandbox/staging',
-        working: '/apps/falcon/sandbox/working',
+        staging: '/apps/falcon/' + clusterName + '/staging',
+        working: '/apps/falcon/' + clusterName + '/working',
         temp: '/tmp'
       });
       var sourceClusterData = App.router.get('mainMirroringManageClustersController').formatClusterXML(sourceCluster);
@@ -268,6 +297,7 @@ App.MainMirroringController = Em.ArrayController.extend({
   },
 
   onLoadClustersListError: function () {
+    this.set('isDatasetLoadingError', true);
     console.error('Failed to load clusters list.');
   },
 
@@ -308,6 +338,7 @@ App.MainMirroringController = Em.ArrayController.extend({
   },
 
   onLoadClusterDefinitionError: function () {
+    this.set('isDatasetLoadingError', true);
     console.error('Failed to load cluster definition.');
   },
 
@@ -320,17 +351,14 @@ App.MainMirroringController = Em.ArrayController.extend({
 
   manageClusters: function () {
     var self = this;
-    var manageClustersController = App.router.get('mainMirroringManageClustersController');
-    var popup = App.ModalPopup.show({
+    App.ModalPopup.show({
       header: Em.I18n.t('mirroring.dataset.manageClusters'),
+      classNames: ['sixty-percent-width-modal'],
       bodyClass: App.MainMirroringManageClusterstView.extend({
-        controller: manageClustersController
+        controller: App.router.get('mainMirroringManageClustersController')
       }),
-      primary: Em.I18n.t('common.save'),
-      secondary: null,
-      onPrimary: function () {
-        manageClustersController.save();
-      },
+      primary: null,
+      secondary: Em.I18n.t('common.close'),
       hide: function () {
         self.loadData();
         App.router.send('gotoShowJobs');
@@ -341,6 +369,5 @@ App.MainMirroringController = Em.ArrayController.extend({
         this.fitHeight();
       }
     });
-    manageClustersController.set('popup', popup);
   }
 });

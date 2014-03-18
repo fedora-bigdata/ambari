@@ -24,7 +24,6 @@ App.MainMirroringEditDataSetController = Ember.Controller.extend({
   // Fields values from Edit DataSet form
   formFields: Ember.Object.create({
     datasetName: null,
-    datasetType: null,
     datasetTargetClusterName: null,
     datasetSourceDir: null,
     datasetTargetDir: null,
@@ -101,13 +100,10 @@ App.MainMirroringEditDataSetController = Ember.Controller.extend({
       saveDisabled: function () {
         return self.get('saveDisabled');
       }.property('App.router.' + self.get('name') + '.saveDisabled'),
-      enablePrimary: function () {
-        return !this.get('saveDisabled');
+      disablePrimary: function () {
+        return this.get('saveDisabled');
       }.property('saveDisabled'),
       onPrimary: function () {
-        if (this.get('saveDisabled')) {
-          return false;
-        }
         // Apply form validation for first click
         if (!this.get('primaryWasClicked')) {
           this.toggleProperty('primaryWasClicked');
@@ -184,6 +180,11 @@ App.MainMirroringEditDataSetController = Ember.Controller.extend({
       errors.set('isEndDateError', true);
       errorMessages.set('endDate', Em.I18n.t('mirroring.dateOrder.error'));
     }
+    // Check that startDate is after current date
+    if (!this.get('isEdit') && new Date(App.dateTime()) > scheduleStartDate) {
+      errors.set('isStartDateError', true);
+      errorMessages.set('startDate', Em.I18n.t('mirroring.startDate.error'));
+    }
     // Check that repeat field value consists only from digits
     if (isNaN(this.get('formFields.datasetFrequency'))) {
       errors.set('isFrequencyError', true);
@@ -198,7 +199,7 @@ App.MainMirroringEditDataSetController = Ember.Controller.extend({
 
   // Convert date to TZ format
   toTZFormat: function (date) {
-    return date.getFullYear() + '-' + this.addZero(date.getMonth() + 1) + '-' + this.addZero(date.getDate()) + 'T' + this.addZero(date.getHours()) + ':' + this.addZero(date.getMinutes()) + 'Z';
+    return date.toISOString().replace(/\:\d{2}\.\d{3}/,'');
   },
 
   // Converts hours value from 24-hours format to AM/PM format

@@ -21,8 +21,9 @@ var App = require('app');
  * Default success callback for ajax-requests in this module
  * @type {Function}
  */
-var defaultSuccessCallback = function() {
+var defaultSuccessCallback = function(data, ajaxOptions, params) {
   App.router.get('applicationController').dataLoading().done(function(initValue) {
+    params.query && params.query.set('status', 'SUCCESS');
     if (initValue) {
       App.router.get('backgroundOperationsController').showPopup();
     }
@@ -36,7 +37,8 @@ var defaultSuccessCallback = function() {
  * @param {Object} opt
  * @type {Function}
  */
-var defaultErrorCallback = function(xhr, textStatus, error, opt) {
+var defaultErrorCallback = function(xhr, textStatus, error, opt, params) {
+  params.query && params.query.set('status', 'FAIL');
   App.ajax.defaultErrorHandler(xhr, opt.url, 'POST', xhr.status);
 };
 
@@ -67,15 +69,15 @@ module.exports = {
    * @param {String} serviceName for which service hostComponents should be restarted
    * @param {bool} staleConfigsOnly restart only hostComponents with <code>staleConfig</code> true
    */
-  restartAllServiceHostComponents: function(serviceName, staleConfigsOnly) {
+  restartAllServiceHostComponents: function(serviceName, staleConfigsOnly, query) {
     var service = App.Service.find(serviceName);
     var context = staleConfigsOnly ? Em.I18n.t('rollingrestart.context.allWithStaleConfigsForSelectedService').format(serviceName) : Em.I18n.t('rollingrestart.context.allForSelectedService').format(serviceName);
     if (service) {
-      var hostComponents = service.get('hostComponents');
+      var hostComponents = service.get('hostComponents').filterProperty('host.passiveState','OFF');
       if (staleConfigsOnly) {
         hostComponents = hostComponents.filterProperty('staleConfigs', true);
       }
-      this.restartHostComponents(hostComponents, context);
+      this.restartHostComponents(hostComponents, context, query);
     }
   },
 
@@ -84,7 +86,7 @@ module.exports = {
    * @param {Ember.Enumerable} hostComponentsList list of host components should be restarted
    * @param {String} context message to show in BG popup
    */
-  restartHostComponents: function(hostComponentsList, context) {
+  restartHostComponents: function(hostComponentsList, context, query) {
     context = context || Em.I18n.t('rollingrestart.context.default');
     /**
      * Format: {
@@ -121,7 +123,8 @@ module.exports = {
         },
         data: {
           context: context,
-          resource_filters: resource_filters
+          resource_filters: resource_filters,
+          query: query
         },
         success: 'successCallback',
         error: 'errorCallback'
@@ -215,9 +218,9 @@ module.exports = {
    *           Pre-select host-components which have stale
    *          configurations
    */
-  launchHostComponentRollingRestart: function(hostComponentName, staleConfigsOnly) {
+  launchHostComponentRollingRestart: function(hostComponentName, staleConfigsOnly, skipMaintenance) {
     if (App.get('components.rollinRestartAllowed').contains(hostComponentName)) {
-      this.showRollingRestartPopup(hostComponentName, staleConfigsOnly);
+      this.showRollingRestartPopup(hostComponentName, staleConfigsOnly, null, skipMaintenance);
     }
     else {
       this.showWarningRollingRestartPopup(hostComponentName);
@@ -231,7 +234,7 @@ module.exports = {
    * @param {App.hostComponent[]} hostComponents list of hostComponents that should be restarted (optional).
    * Using this parameter will reset hostComponentName
    */
-  showRollingRestartPopup: function(hostComponentName, staleConfigsOnly, hostComponents) {
+  showRollingRestartPopup: function(hostComponentName, staleConfigsOnly, hostComponents, skipMaintenance) {
     hostComponents = hostComponents || [];
     var componentDisplayName = App.format.role(hostComponentName);
     if (!componentDisplayName) {
@@ -241,6 +244,7 @@ module.exports = {
     var viewExtend = {
       staleConfigsOnly : staleConfigsOnly,
       hostComponentName : hostComponentName,
+      skipMaintenance: skipMaintenance,
       didInsertElement : function() {
         this.set('parentView.innerView', this);
         this.initialize();
@@ -255,27 +259,25 @@ module.exports = {
       header : title,
       hostComponentName : hostComponentName,
       staleConfigsOnly : staleConfigsOnly,
+      skipMaintenance: skipMaintenance,
       innerView : null,
       bodyClass : App.RollingRestartView.extend(viewExtend),
       classNames : [ 'rolling-restart-popup' ],
       primary : Em.I18n.t('rollingrestart.dialog.primary'),
       onPrimary : function() {
         var dialog = this;
-        if (!dialog.get('enablePrimary')) {
-          return;
-        }
         var restartComponents = this.get('innerView.restartHostComponents');
         var batchSize = this.get('innerView.batchSize');
         var waitTime = this.get('innerView.interBatchWaitTimeSeconds');
         var tolerateSize = this.get('innerView.tolerateSize');
-        self._doPostBatchRollingRestartRequest(restartComponents, batchSize, waitTime, tolerateSize, function() {
+        self._doPostBatchRollingRestartRequest(restartComponents, batchSize, waitTime, tolerateSize, function(data, ajaxOptions, params) {
           dialog.hide();
-          defaultSuccessCallback();
+          defaultSuccessCallback(data, ajaxOptions, params);
         });
       },
       updateButtons : function() {
         var errors = this.get('innerView.errors');
-        this.set('enablePrimary', !(errors != null && errors.length > 0))
+        this.set('disablePrimary', (errors != null && errors.length > 0))
       }.observes('innerView.errors')
     });
   },
@@ -298,6 +300,24 @@ module.exports = {
       msg : msg,
       bodyClass : Em.View.extend({
         template : Em.Handlebars.compile('<div class="alert alert-warning">{{msg}}</div>')
+      })
+    });
+  },
+
+  /**
+   * Warn user that alerts will be updated in few minutes
+   * @param {String} hostComponentName
+   */
+  infoPassiveState: function(passiveState) {
+    var enabled = passiveState == 'OFF' ? 'enabled' : 'suppressed';
+    App.ModalPopup.show({
+      header: Em.I18n.t('common.information'),
+      secondary: null,
+      bodyClass: Ember.View.extend({
+        template: Ember.Handlebars.compile('<p>{{view.message}}</p>'),
+        message: function() {
+          return Em.I18n.t('hostPopup.warning.alertsTimeOut').format(passiveState.toLowerCase(), enabled);
+        }.property()
       })
     });
   },

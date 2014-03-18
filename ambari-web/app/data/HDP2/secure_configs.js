@@ -132,12 +132,20 @@ module.exports = [
     displayName: 'Storm',
     filename: 'storm-site',
     configCategories: [
-      App.ServiceConfigCategory.create({ name: 'NIMBUS', displayName:  'Nimbus'}),
-      App.ServiceConfigCategory.create({ name: 'STORM_UI_SERVER', displayName:  'Storm UI Server'}),
-      App.ServiceConfigCategory.create({ name: 'SUPERVISOR', displayName:  'Supervisor'})
+      App.ServiceConfigCategory.create({ name: 'Storm Topology', displayName:  'Storm Topology'})
     ],
     sites: ['storm-site'],
     configs: configProperties.filterProperty('serviceName', 'STORM')
+  },
+  {
+    serviceName: 'FALCON',
+    displayName: 'Falcon',
+    filename: 'falcon-startup.properties',
+    configCategories: [
+      App.ServiceConfigCategory.create({ name: 'Falcon Server', displayName:  'Falcon Server startup properties'})
+    ],
+    sites: ['falcon-startup.properties'],
+    configs: configProperties.filterProperty('serviceName', 'FALCON')
   }
 
 

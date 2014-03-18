@@ -25,17 +25,19 @@ module.exports = Em.Route.extend({
     App.db.updateStorage();
     console.log('in /main:enter');
     if (router.getAuthenticated()) {
-      App.router.get('clusterController').loadClusterName(false);
-      if(App.testMode){
-        router.get('mainController').initialize();
-      }else{
-        App.router.get('clusterController').loadClientServerClockDistance().done(function() {
+      App.router.get('mainAdminAccessController').loadShowJobsForUsers().done(function() {
+        App.router.get('clusterController').loadClusterName(false);
+        if(App.testMode) {
           router.get('mainController').initialize();
-        });
-      }
+        }else {
+          App.router.get('clusterController').loadClientServerClockDistance().done(function() {
+            router.get('mainController').initialize();
+          });
+        }
+      });
       // TODO: redirect to last known state
     } else {
-      Ember.run.next(function () {
+      Em.run.next(function () {
         router.transitionTo('login');
       });
     }
@@ -120,7 +122,7 @@ module.exports = Em.Route.extend({
   jobs : Em.Route.extend({
     route : '/jobs',
     enter: function (router) {
-      if(!App.db.getShowJobsForNonAdmin() && !App.get('isAdmin')){
+      if(!App.router.get('mainAdminAccessController.showJobs') && !App.get('isAdmin')){
         Em.run.next(function () {
           router.transitionTo('main.dashboard');
         });
@@ -174,8 +176,8 @@ module.exports = Em.Route.extend({
       router.get('mainController').connectOutlet('mainMirroring');
     },
 
-    gotoShowJobs: function (router, event) {
-      var dataset = (event && event.context) || router.get('mainMirroringController.selectedDataset') || App.Dataset.find().objectAt(0);
+    gotoShowJobs: function (router, context) {
+      var dataset = context || router.get('mainMirroringController.selectedDataset') || App.Dataset.find().objectAt(0);
       if (dataset) {
         router.transitionTo('showDatasetJobs', dataset);
       } else {
@@ -477,9 +479,9 @@ module.exports = Em.Route.extend({
                     self.proceedOnClose();
                     return;
                   }
-                  var applyingConfigStage = controller.get('stages').findProperty('stage', 'stage3');
-                  if (applyingConfigStage && !applyingConfigStage.get('isCompleted')) {
-                    if (applyingConfigStage.get('isStarted')) {
+                  var applyingConfigCommand = controller.get('commands').findProperty('name', 'APPLY_CONFIGURATIONS');
+                  if (applyingConfigCommand && !applyingConfigCommand.get('isCompleted')) {
+                    if (applyingConfigCommand.get('isStarted')) {
                       App.showAlertPopup(Em.I18n.t('admin.security.applying.config.header'), Em.I18n.t('admin.security.applying.config.body'));
                     } else {
                       App.showConfirmationPopup(function () {
@@ -492,7 +494,7 @@ module.exports = Em.Route.extend({
                 },
                 proceedOnClose: function () {
                   router.get('mainAdminSecurityDisableController').clearStep();
-                  App.db.setSecurityDeployStages(undefined);
+                  App.db.setSecurityDeployCommands(undefined);
                   App.router.get('updateController').set('isWorking', true);
                   router.get('mainAdminSecurityController').setDisableSecurityStatus(undefined);
                   App.clusterStatus.setClusterStatus({

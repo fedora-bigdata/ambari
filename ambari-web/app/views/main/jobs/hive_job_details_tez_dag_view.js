@@ -33,6 +33,8 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
   // zoomScaleTo: -1, // Bound from parent view
   // zoomScale: -1, // Bound from parent view
   zoomTranslate: [0, 0],
+  zoomBehavior: null,
+  svgCreated: false,
 
   content : null,
 
@@ -44,7 +46,7 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
    *     {
    *       "id": "Map2",
    *       "name": "Map 2",
-   *       "isMap": true,
+   *       "type": App.TezDagVertexType.MAP,
    *       "operations": [
    *         "TableScan",
    *         "File Output"
@@ -89,6 +91,10 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
     this.createSvg();
   },
 
+  willDestroyElement : function() {
+    $('.svg-tooltip').tooltip('destroy');
+  },
+
   createSvg : function() {
     var self = this;
     var dagVisualModel = this.get('dagVisualModel');
@@ -117,10 +123,12 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
       self.set('zoomTranslate', d3.event.translate);
     });
     svg.call(zoom);
+    this.set('zoomBehavior', zoom);
     this.set('zoomTranslate', [0, 0]);
     this.set('zoomScaleFrom', minScale);
     this.set('zoomScaleTo', 2);
     this.set('zoomScale', minScale);
+    this.set('svgCreated', true);
   },
 
   zoomScaleObserver : function() {
@@ -129,8 +137,39 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
     var newScaleFrom = this.get('zoomScaleFrom');
     var newScaleTo = this.get('zoomScaleTo');
     var zoomTranslate = this.get('zoomTranslate');
+    var zoomBehavior = this.get('zoomBehavior');
+    if (d3.event == null && this.get('svgCreated')) {
+      // Values were set from actions instead of UI events
+      // We need to center in on selected vertex if available.
+      var selectedNode = null;
+      var dagVisualModel = this.get('dagVisualModel');
+      if (dagVisualModel && dagVisualModel.nodes && dagVisualModel.nodes.length > 0) {
+        dagVisualModel.nodes.every(function(node) {
+          if (node.selected) {
+            selectedNode = node;
+            return false;
+          }
+          return true;
+        })
+      }
+      if (selectedNode != null) {
+        var cX = selectedNode.x + selectedNode.width / 2;
+        var cY = selectedNode.y + selectedNode.height / 2;
+        var mX = (cX * zoomBehavior.scale()) + zoomTranslate[0];
+        var mY = (cY * zoomBehavior.scale()) + zoomTranslate[1];
+        var pX = (cX * newScale) + zoomTranslate[0];
+        var pY = (cY * newScale) + zoomTranslate[1];
+        var nX = (mX - pX);
+        var nY = (mY - pY);
+        zoomTranslate[0] += nX;
+        zoomTranslate[1] += nY;
+        this.set('zoomTranslate', zoomTranslate);
+      }
+    }
     console.debug("zoomScaleObserver(): New scale = " + newScale + ", Range = [" + newScaleFrom + ", " + newScaleTo + "]. Translate = ", zoomTranslate.join(','));
-    tezRoot.attr("transform", "translate("+zoomTranslate+")scale(" + newScale + ")");
+    zoomBehavior.scale(newScale);
+    zoomBehavior.translate(zoomTranslate);
+    tezRoot.attr("transform", "translate(" + zoomTranslate + ")scale(" + newScale + ")");
   }.observes('zoomScale', 'zoomScaleFrom', 'zoomScaleTo', 'zoomTranslate'),
 
   /**
@@ -208,14 +247,16 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
       output : Number.MAX_VALUE,
       recordsRead : Number.MAX_VALUE,
       recordsWrite : Number.MAX_VALUE,
-      tezTasks : Number.MAX_VALUE
+      tezTasks : Number.MAX_VALUE,
+      spilledRecords : Number.MAX_VALUE
     };
     dagVisualModel.maxMetrics = {
       input : 0,
       output : 0,
       recordsRead : 0,
       recordsWrite : 0,
-      tezTasks : 0
+      tezTasks : 0,
+      spilledRecords : 0
     };
     if (dagVisualModel.nodes) {
       dagVisualModel.nodes.forEach(function(node) {
@@ -226,6 +267,7 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
           node.metrics['recordsRead'] = vertex.get('recordReadCount');
           node.metrics['recordsWrite'] = vertex.get('recordWriteCount');
           node.metrics['tezTasks'] = vertex.get('tasksCount');
+          node.metrics['spilledRecords'] = vertex.get('spilledRecords');
           node.state = vertex.get('state');
           // Min metrics
           dagVisualModel.minMetrics.input = Math.min(dagVisualModel.minMetrics.input, node.metrics.input);
@@ -233,12 +275,14 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
           dagVisualModel.minMetrics.recordsRead = Math.min(dagVisualModel.minMetrics.recordsRead, node.metrics.recordsRead);
           dagVisualModel.minMetrics.recordsWrite = Math.min(dagVisualModel.minMetrics.recordsWrite, node.metrics.recordsWrite);
           dagVisualModel.minMetrics.tezTasks = Math.min(dagVisualModel.minMetrics.tezTasks, node.metrics.tezTasks);
+          dagVisualModel.minMetrics.spilledRecords = Math.min(dagVisualModel.minMetrics.spilledRecords, node.metrics.spilledRecords);
           // Max metrics
           dagVisualModel.maxMetrics.input = Math.max(dagVisualModel.maxMetrics.input, node.metrics.input);
           dagVisualModel.maxMetrics.output = Math.max(dagVisualModel.maxMetrics.output, node.metrics.output);
           dagVisualModel.maxMetrics.recordsRead = Math.max(dagVisualModel.maxMetrics.recordsRead, node.metrics.recordsRead);
           dagVisualModel.maxMetrics.recordsWrite = Math.max(dagVisualModel.maxMetrics.recordsWrite, node.metrics.recordsWrite);
           dagVisualModel.maxMetrics.tezTasks = Math.max(dagVisualModel.maxMetrics.tezTasks, node.metrics.tezTasks);
+          dagVisualModel.maxMetrics.spilledRecords = Math.max(dagVisualModel.maxMetrics.spilledRecords, node.metrics.spilledRecords);
         }
       });
     }
@@ -246,7 +290,7 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
   }.observes('content.tezDag.vertices.@each.fileReadBytes', 'content.tezDag.vertices.@each.fileWriteBytes', 
       'content.tezDag.vertices.@each.hdfsReadBytes', 'content.tezDag.vertices.@each.hdfsWriteBytes', 
       'content.tezDag.vertices.@each.recordReadCount', 'content.tezDag.vertices.@each.recordWriteCount',
-      'content.tezDag.vertices.@each.state'),
+      'content.tezDag.vertices.@each.state', 'content.tezDag.vertices.@each.spilledRecords'),
 
   /**
    * Determines layout and creates Tez graph. In the process it populates the
@@ -286,6 +330,10 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
       var pName = edgeObj.parent ? edgeObj.parent.name : null;
       var cName = edgeObj.toVertex ? edgeObj.toVertex.get('name') : null;
       console.debug("Processing vertex ", edgeObj, " (",pName, " > ", cName,")");
+      if(edgeObj.parent && edgeObj.depth < edgeObj.parent.depth + 1){
+        console.debug("Updating child edge to " + (edgeObj.parent.depth + 1));
+        edgeObj.depth = edgeObj.parent.depth + 1;
+      }
       var node = vertexIdToNode[vertex.get('id')];
       for ( var k = depthToNodes.length; k <= edgeObj.depth; k++) {
         depthToNodes.push([]);
@@ -296,7 +344,7 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
           id : vertex.get('id'),
           name : vertex.get('name'),
           state : vertex.get('state'),
-          isMap : vertex.get('isMap'),
+          type : vertex.get('type'),
           operations : vertex.get('operations'),
           depth : edgeObj.depth,
           parents : [],
@@ -321,10 +369,23 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
       } else {
         // Existing node
         if (edgeObj.depth > node.depth) {
-          var oldIndex = depthToNodes[node.depth].indexOf(node);
-          depthToNodes[node.depth].splice(oldIndex, 1);
-          node.depth = edgeObj.depth;
-          depthToNodes[node.depth].push(node);
+          function moveNodeToDepth(node, newDepth) {
+            console.debug("Moving " + node.name + " from depth " + node.depth + " to " + newDepth);
+            var oldIndex = depthToNodes[node.depth].indexOf(node);
+            depthToNodes[node.depth].splice(oldIndex, 1);
+            node.depth = newDepth;
+            if (!depthToNodes[node.depth]) {
+              depthToNodes[node.depth] = [];
+            }
+            depthToNodes[node.depth].push(node);
+            if (node.children) {
+              // Move children down depth
+              node.children.forEach(function(c) {
+                moveNodeToDepth(c, node.depth + 1);
+              })
+            }
+          }
+          moveNodeToDepth(node, edgeObj.depth);
         }
       }
       if (depthToNodes[node.depth].length > maxRowLength) {
@@ -361,6 +422,32 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
         edgeType : e.get('edgeType')
       });
     });
+    // Sort nodes so that parents stay together
+    for ( var depth = 0; depth < depthToNodes.length; depth++) {
+      var nodes = depthToNodes[depth];
+      nodes.sort(function(n1, n2) {
+        var ck1 = '';
+        var ck2 = '';
+        if (n1.children) {
+          n1.children.forEach(function(c) {
+            ck1 += c.name;
+          });
+        }
+        if (n2.children) {
+          n2.children.forEach(function(c) {
+            ck2 += c.name;
+          });
+        }
+        if (ck1 < ck2) {
+          return -1
+        }
+        if (ck1 > ck2) {
+          return 1
+        }
+        return 0
+      });
+      depthToNodes[depth] = nodes;
+    }
 
     //
     // LAYOUT - Now with correct depth, we calculate layouts
@@ -402,7 +489,16 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
           updateNodeEffectiveWidth(node, xGap + node.width);
         }
         if (node.children && node.children.length > 0) {
-          updateNodeEffectiveWidth(node, node.children.length * (xGap + node.width));
+          // There can be dedicated or shared children.
+          // Dedicated children increase effective width of parent by their
+          // width.
+          // Shared children increase effective width of parent only by the
+          // fraction of parentage
+          var childrenWidth = 0;
+          node.children.forEach(function(child) {
+            childrenWidth += ((node.width + xGap) / child.parents.length);
+          });
+          updateNodeEffectiveWidth(node, Math.max(childrenWidth, (node.width+xGap)));
         } else {
           updateNodeEffectiveWidth(node, xGap + node.width);
         }
@@ -423,16 +519,22 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
         var node = nodes[nodeIndex];
         var parentsKey = null;
         if (node.parents != null && node.parents.length > 0) {
-          var parentStart = 0;
+          var parentMidX = 0;
           var parentsKey = '';
+          var childrenEffectiveWidth = -1;
           node.parents.forEach(function(parent) {
-            parentStart += (parent.x - ((parent.effectiveWidth - parent.width) / 2));
+            parentMidX += (parent.x + (parent.width / 2));
             parentsKey += (parent.id + '//');
+            if (childrenEffectiveWidth < 0) {
+              parent.children.forEach(function(c){
+                childrenEffectiveWidth += (c.effectiveWidth);
+              });
+            }
           });
-          parentStart = parentStart / node.parents.length;
+          parentMidX = parentMidX / node.parents.length;
           var parentCurrentX = parentCurrentXMap[parentsKey];
           if (parentCurrentX == null || parentCurrentX == undefined) {
-            parentCurrentX = parentStart - ((node.effectiveWidth - node.width) / 2) + (xGap / 2);
+            parentCurrentX = parentMidX - (childrenEffectiveWidth/2);
             parentCurrentXMap[parentsKey] = parentCurrentX;
           }
           currentX = parentCurrentX;
@@ -464,6 +566,23 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
     //
     var self = this;
     var force = d3.layout.force().nodes(dagVisualModel.nodes).links(dagVisualModel.links).start();
+    var nodeDragData = {
+      nodeRelativeX : 0,
+      nodeRelativeY : 0
+    };
+    var nodeDrag = d3.behavior.drag().on('dragstart', function(node){
+      d3.event.sourceEvent.stopPropagation();
+      var rc = d3.mouse(this);
+      nodeDragData.nodeRelativeX = rc[0];
+      nodeDragData.nodeRelativeY = rc[1];
+    }).on('drag', function(node){
+      var nx = d3.event.x - nodeDragData.nodeRelativeX;
+      var ny = d3.event.y - nodeDragData.nodeRelativeY;
+      self.dragVertex(d3.select(this), node, [nx, ny], diagonal);
+    }).on('dragend', function(){
+      nodeDragData.nodeRelativeX = 0;
+      nodeDragData.nodeRelativeY = 0;
+    });
     // Create Links
     var diagonal = d3.svg.diagonal().source(function(d) {
       return {
@@ -476,18 +595,13 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
         y : d.target.incomingY - 12
       }
     });
-    var link = svgLayer.selectAll(".link").data(dagVisualModel.links).enter().append("g").attr("class", "link").attr("marker-end", "url(#arrow)");
+    var link = svgLayer.selectAll(".link-g").data(dagVisualModel.links).enter().append("g").attr("class", "link-g").attr("marker-end", "url(#arrow)");
     link.append("path").attr("class", function(l) {
       var classes = "link svg-tooltip ";
-      switch (l.edgeType) {
-      case App.TezDagVertexType.BROADCAST:
-        classes += "type-broadcast ";
-        break;
-      case App.TezDagVertexType.SCATTER_GATHER:
-        classes += "type-scatter-gather ";
-        break;
-      default:
-        break;
+      if (l.edgeType) {
+        classes += ("type-" + l.edgeType.toLowerCase() + " ");
+      } else {
+        classes += "type-unknown ";
       }
       return classes;
     }).attr("d", diagonal).attr("title", function(l) {
@@ -495,7 +609,7 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
       return Em.I18n.t("jobs.hive.tez.edge." + lower);
     });
     // Create Nodes
-    var node = svgLayer.selectAll(".node").data(dagVisualModel.nodes).enter().append("g").attr("class", "node");
+    var node = svgLayer.selectAll(".node").data(dagVisualModel.nodes).enter().append("g").attr("class", "node").call(nodeDrag);
     node.append("rect").attr("class", "background").attr("width", function(n) {
       return n.width;
     }).attr("height", function(n) {
@@ -511,79 +625,91 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
     node.each(function(n, nodeIndex) {
       var ops = n.operations;
       var opCount = {};
-      var opGroups = d3.select(this).selectAll(".operation").data(ops).enter().append("g").attr("class", "operation").attr("transform", function(op, opIndex) {
-        var row = Math.floor(opIndex / 3);
-        var column = opIndex % 3;
-        return "translate(" + (10 + column * 55) + "," + (37 + row * 20) + ")";
-      }).attr("clip-path", "url(#operatorClipPath)").attr("opIndex", function(op){
-        if(!opCount[op]) {
-          opCount[op] = 1;
-        } else {
-          opCount[op] = opCount[op]+1;
-        }
-        return opCount[op];
-      }).on('mousedown', function(op) {
-        var opIndex = this.getAttribute ? this.getAttribute("opIndex") : null;
-        if (numberUtils.validateInteger(opIndex) == null) {
-          console.log("Clicked on operator: ", op, " [", opIndex, "]");
-          var textArea = document.getElementById('tez-vertex-operator-plan-textarea');
-          if (textArea && textArea.value) {
-            var text = textArea.value;
-            var opText = "\"" + op + "\"";
-            var count = 1;
-            var index = text.indexOf(opText);
-            while (index > -1 && count < opIndex) {
-              index = text.indexOf(opText, index + 1);
-              count++;
-            }
-            if (index > -1) {
-              var start = index;
-              var end = index;
-              var matchCount = 0;
-              var splits = text.substring(start).split(/({|})/);
-              splits.every(function(s) {
-                if (s == '{') {
-                  matchCount++;
-                } else if (s == '}') {
-                  matchCount--;
-                  if (matchCount == 0) {
-                    end += s.length;
-                    return false;
-                  }
-                }
-                end += s.length;
-                return true;
-              });
-              textArea.setSelectionRange(start, end);
-              // Now scroll to the selection
-              var lines = 0;
-              var totalLines = 0;
-              var index = text.indexOf("\n");
-              while (index > 0) {
-                index = text.indexOf("\n", index + 1);
-                if (index < start) {
-                  lines++;
-                }
-                totalLines++;
+      if (ops != null && ops.length > 0) {
+        var opGroups = d3.select(this).selectAll(".operation").data(ops).enter().append("g").attr("class", "operation").attr("transform", function(op, opIndex) {
+          var row = Math.floor(opIndex / 3);
+          var column = opIndex % 3;
+          return "translate(" + (10 + column * 55) + "," + (37 + row * 20) + ")";
+        }).attr("clip-path", "url(#operatorClipPath)").attr("opIndex", function(op){
+          if(!opCount[op]) {
+            opCount[op] = 1;
+          } else {
+            opCount[op] = opCount[op]+1;
+          }
+          return opCount[op];
+        }).on('mousedown', function(op) {
+          var opIndex = this.getAttribute ? this.getAttribute("opIndex") : null;
+          if (numberUtils.validateInteger(opIndex) == null) {
+            console.log("Clicked on operator: ", op, " [", opIndex, "]");
+            var textArea = document.getElementById('tez-vertex-operator-plan-textarea');
+            if (textArea && textArea.value) {
+              var text = textArea.value;
+              var opText = "\"" + op + "\"";
+              var count = 1;
+              var index = text.indexOf(opText);
+              while (index > -1 && count < opIndex) {
+                index = text.indexOf(opText, index + 1);
+                count++;
               }
-              console.log("Selection is from row ", lines, " out of ", totalLines);
-              lines -= 5;
-              var lineHeight = Math.floor(textArea.scrollHeight / totalLines);
-              var scrollHeight = Math.round(lines * lineHeight);
-              textArea.scrollTop = scrollHeight;
+              if (index > -1) {
+                var start = index;
+                var end = index;
+                var matchCount = 0;
+                var splits = text.substring(start).split(/({|})/);
+                splits.every(function(s) {
+                  if (s == '{') {
+                    matchCount++;
+                  } else if (s == '}') {
+                    matchCount--;
+                    if (matchCount == 0) {
+                      end += s.length;
+                      return false;
+                    }
+                  }
+                  end += s.length;
+                  return true;
+                });
+                textArea.setSelectionRange(start, end);
+                // Now scroll to the selection
+                var lines = 0;
+                var totalLines = 0;
+                var index = text.indexOf("\n");
+                while (index > 0) {
+                  index = text.indexOf("\n", index + 1);
+                  if (index < start) {
+                    lines++;
+                  }
+                  totalLines++;
+                }
+                console.log("Selection is from row ", lines, " out of ", totalLines);
+                lines -= 5;
+                var lineHeight = Math.floor(textArea.scrollHeight / totalLines);
+                var scrollHeight = Math.round(lines * lineHeight);
+                textArea.scrollTop = scrollHeight;
+              }
             }
           }
-        }
-      });
-      opGroups.append("rect").attr("class", "operation svg-tooltip ").attr("width", "50").attr("height", "16").attr("title", function(op) {
-        return op;
-      });
-      opGroups.append("text").attr("x", "2").attr("dy", "1em").text(function(op) {
-        return op != null ? op.split(' ')[0] : '';
-      });
+        });
+        opGroups.append("rect").attr("class", "operation svg-tooltip ").attr("width", "50").attr("height", "16").attr("title", function(op) {
+          return op;
+        });
+        opGroups.append("text").attr("x", "2").attr("dy", "1em").text(function(op) {
+          return op != null ? op.split(' ')[0] : '';
+        });
+      }
     });
     var metricNodes = node.append("g").attr("class", "metric").attr("transform", "translate(112,7)");
-    metricNodes.append("rect").attr("width", 60).attr("height", 18).attr("rx", "3").attr("class", "metric-title svg-tooltip");
+    metricNodes.append("rect").attr("width", function(n) {
+      if (n.type == App.TezDagVertexType.UNION) {
+        return 0;
+      }
+      return 60;
+    }).attr("height", function(n) {
+      if (n.type == App.TezDagVertexType.UNION) {
+        return 0;
+      }
+      return 18;
+    }).attr("rx", "3").attr("class", "metric-title svg-tooltip");
     metricNodes.append("text").attr("class", "metric-text").attr("x", "2").attr("dy", "1em");
     node.append("text").attr("x", "1.9em").attr("dy", "1.5em").text(function(d) {
       return d.name;
@@ -599,6 +725,19 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
       placement : 'left'
     });
 
+    if (App.supports.debugJobsDag) {
+      // Draws node bounding box - for debug purposes
+      node.append("rect").attr("width", function(n) {
+        return n.effectiveWidth;
+      }).attr("height", function(n) {
+        return n.height;
+      }).attr("x", function(n) {
+        return -1 * ((n.effectiveWidth - n.width) / 2);
+      }).attr("y", function(n) {
+        return 0;
+      }).attr("style", "opacity: 0.2;fill:yellow;");
+    }
+
     // Position in center
     var translateX = Math.round((width - canvasWidth) / 2);
     if (translateX > 0) {
@@ -608,6 +747,25 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
       width : canvasWidth,
       height : canvasHeight
     }
+  },
+
+  dragVertex: function(d3Vertex, node, newPosition, diagonal){
+    console.debug("Dragging vertex [", node.name, "] to (", newPosition[0], ",", newPosition[1], ")");
+    // Move vertex
+    node.x = newPosition[0];
+    node.y = newPosition[1];
+    node.incomingX = newPosition[0] + (node.width/2);
+    node.incomingY = newPosition[1];
+    node.outgoingX = newPosition[0] + (node.width/2);
+    node.outgoingY = newPosition[1] + node.height;
+    d3Vertex.attr('transform', 'translate(' + newPosition[0] + ',' + newPosition[1] + ')');
+    // Move links
+    d3.selectAll('.link').filter(function(l) {
+      if (l && (l.source === node || l.target === node)) {
+        return this
+      }
+      return null;
+    }).attr('d', diagonal);
   },
 
   /**
@@ -646,6 +804,9 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
         return classes;
       });
       metricNodeTexts.text(function(node){
+        if (node.type == App.TezDagVertexType.UNION) {
+          return '';
+        }
         return node.metricDisplay;
       });
       metricNodeTitles.attr("title", function(node){
@@ -655,10 +816,10 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
       });
       nodeBackgrounds.attr("class", function(n) {
         var classes = "background ";
-        if (n.isMap) {
-          classes += "map ";
+        if (n.type) {
+          classes += (n.type.toLowerCase() + " ");
         } else {
-          classes += "reduce ";
+          classes += "unknown-vertex-type ";
         }
         if (n.selected) {
           classes += "selected ";
@@ -718,7 +879,7 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
       width : 180,
       height : 40
     }
-    if (node.operations.length > 0) {
+    if (node.operations && node.operations.length > 0) {
       var opsHeight = Math.ceil(node.operations.length / 3);
       size.height += (opsHeight * 20);
     }

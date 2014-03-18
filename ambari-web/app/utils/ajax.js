@@ -160,6 +160,25 @@ var urls = {
       }
     }
   },
+  'reassign.stop_YMR2_services': {
+    'real': '/clusters/{clusterName}/services?ServiceInfo/service_name.in({servicesList})',
+    'mock': '',
+    'format': function() {
+      return {
+        type: 'PUT',
+        data: JSON.stringify({
+          "RequestInfo": {
+            "context": "Stop without HDFS"
+          },
+          "Body": {
+            "ServiceInfo": {
+              "state": "INSTALLED"
+            }
+          }
+        })
+      }
+    }
+  },
   'reassign.start_services': {
     'real': '/clusters/{clusterName}/services?params/run_smoke_test=true',
     'mock': '',
@@ -169,6 +188,25 @@ var urls = {
         data: JSON.stringify({
           "RequestInfo": {
             "context": "Start all services"
+          },
+          "Body": {
+            "ServiceInfo": {
+              "state": "STARTED"
+            }
+          }
+        })
+      }
+    }
+  },
+  'reassign.start_YMR2_services': {
+    'real': '/clusters/{clusterName}/services/?ServiceInfo/service_name.in({servicesList})',
+    'mock': '',
+    'format': function() {
+      return {
+        type: 'PUT',
+        data: JSON.stringify({
+          "RequestInfo": {
+            "context": "Start without HDFS"
           },
           "Body": {
             "ServiceInfo": {
@@ -1191,7 +1229,7 @@ var urls = {
   },
   'wizard.step9.installer.get_host_status': {
     'real': '/clusters/{cluster}/hosts?fields=Hosts/host_state,host_components/HostRoles/state',
-    'mock': '/data/wizard/deploy/5_hosts/get_host_status.json',
+    'mock': '/data/wizard/deploy/5_hosts/get_host_state.json',
     'format': function () {
       return {
         async: false
@@ -1340,7 +1378,7 @@ var urls = {
   },
   'ambari.service': {
     'real': '/services/AMBARI/components/AMBARI_SERVER',
-    'mock': ''
+    'mock': '/data/services/ambari_server.json'
   },
   'ambari.service.load_server_clock': {
     'real': '/services/AMBARI/components/AMBARI_SERVER?fields=RootServiceComponents/server_clock',
@@ -1800,7 +1838,7 @@ var ajax = Em.Object.extend({
     };
     opt.error = function (request, ajaxOptions, error) {
       if (config.error) {
-        config.sender[config.error](request, ajaxOptions, error, opt);
+        config.sender[config.error](request, ajaxOptions, error, opt, params);
       } else {
         this.defaultErrorHandler(request, opt.url, opt.type);
       }

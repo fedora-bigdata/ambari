@@ -148,16 +148,11 @@ App.MainHostController = Em.ArrayController.extend({
         this.bulkOperationForHostComponentsRestart(operationData, hosts);
       }
       else {
-        if (operationData.action === 'PASSIVE_STATE') {
-          this.bulkOperationForHostComponentsPassiveState(operationData, hosts);
+        if (operationData.action.indexOf('DECOMMISSION') != -1) {
+          this.bulkOperationForHostComponentsDecommission(operationData, hosts);
         }
         else {
-          if (operationData.action.indexOf('DECOMMISSION') != -1) {
-            this.bulkOperationForHostComponentsDecommission(operationData, hosts);
-          }
-          else {
-            this.bulkOperationForHostComponents(operationData, hosts);
-          }
+          this.bulkOperationForHostComponents(operationData, hosts);
         }
       }
     }
@@ -270,7 +265,9 @@ App.MainHostController = Em.ArrayController.extend({
 
   updateHostPassiveState: function(data, opt, params) {
     params.hosts.setEach('passiveState', params.passive_state);
-    App.router.get('clusterController').loadUpdatedStatus(function(){});
+    App.router.get('clusterController').loadUpdatedStatus(function(){
+      batchUtils.infoPassiveState(params.passive_state);
+    });
   },
   /**
    * Bulk operation for selected hostComponents
@@ -408,61 +405,10 @@ App.MainHostController = Em.ArrayController.extend({
     }
   },
 
-  /**
-   * Bulk turn on/off passive state for selected hostComponents
-   * @param {Object} operationData
-   * @param {Array} hosts
-   */
-  bulkOperationForHostComponentsPassiveState: function(operationData, hosts) {
-    var affectedHosts = [];
-    hosts.forEach(function(host) {
-      host.get('hostComponents').forEach(function(hostComponent) {
-        if (hostComponent.get('componentName') == operationData.componentName) {
-          if (hostComponent.get('passiveState') !== operationData.state) {
-            if (hostComponent.get('passiveState') === 'IMPLIED') {
-              if (operationData.state === 'OFF') {
-                affectedHosts.push(host.get('hostName'));
-              }
-            }
-            else {
-              if (hostComponent.get('passiveState') === 'ON') {
-                if (operationData.state === 'OFF') {
-                  affectedHosts.push(host.get('hostName'));
-                }
-              }
-              else {
-                if (operationData.state === 'ON') {
-                  affectedHosts.push(host.get('hostName'));
-                }
-              }
-            }
-          }
-        }
-      });
+  updateHostComponentsPassiveState: function(data, opt, params) {
+    App.router.get('clusterController').loadUpdatedStatus(function(){
+      batchUtils.infoPassiveState(params.passive_state);
     });
-    if (affectedHosts.length) {
-      App.ajax.send({
-        name: 'bulk_request.hosts.all_components.passive_state',
-        sender: this,
-        data: {
-          query: 'HostRoles/component_name=' + operationData.componentName + '&HostRoles/host_name.in(' + affectedHosts.join(',') + ')',
-          passive_state: operationData.state,
-          requestInfo: operationData.message
-        },
-        success: 'updateHostComponentsPassiveState'
-      });
-    }
-    else {
-      App.ModalPopup.show({
-        header: Em.I18n.t('rolling.nothingToDo.header'),
-        body: Em.I18n.t('hosts.bulkOperation.host_components.passiveState.nothingToDo.body'),
-        secondary: false
-      });
-    }
-  },
-
-  updateHostComponentsPassiveState: function() {
-    App.router.get('clusterController').loadUpdatedStatus(function(){});
   },
   /**
    * Show BO popup after bulk request

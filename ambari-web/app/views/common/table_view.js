@@ -29,6 +29,12 @@ App.TableView = Em.View.extend(App.UserPref, {
   filteringComplete: false,
 
   /**
+   * intermediary for filteringComplete
+   * @type {Boolean}
+   */
+  tableFilteringComplete: false,
+
+  /**
    * Loaded from local storage startIndex value
    * @type {Number}
    */
@@ -74,12 +80,7 @@ App.TableView = Em.View.extend(App.UserPref, {
     } else {
       this.clearFilters();
     }
-
-    Em.run.next(function() {
-      Em.run.next(function() {
-        self.set('filteringComplete', true);
-      });
-    });
+    self.set('tableFilteringComplete', true);
   },
 
   /**
@@ -242,8 +243,18 @@ App.TableView = Em.View.extend(App.UserPref, {
   /**
    * Calculates default value for startIndex property after applying filter or changing displayLength
    */
-  updatePaging: function () {
-    this.set('startIndex', Math.min(1, this.get('filteredContent.length')));
+  updatePaging: function (controller, property) {
+    var displayLength = this.get('displayLength');
+    var filteredContentLength = this.get('filteredContent.length');
+    if (property == 'displayLength') {
+      this.set('startIndex', Math.min(1, filteredContentLength));
+    } else if (!filteredContentLength) {
+      this.set('startIndex', 0);
+    } else if (this.get('startIndex') > filteredContentLength) {
+      this.set('startIndex', Math.floor((filteredContentLength - 1) / displayLength) * displayLength + 1);
+    } else if (!this.get('startIndex')) {
+      this.set('startIndex', 1);
+    }
   }.observes('displayLength', 'filteredContent.length'),
 
   /**
@@ -352,7 +363,7 @@ App.TableView = Em.View.extend(App.UserPref, {
     } else {
       this.set('filteredContent', content.toArray());
     }
-  }.observes('content'),
+  }.observes('content.length'),
 
   /**
    * Does any filter is used on the page

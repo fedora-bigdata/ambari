@@ -31,6 +31,12 @@ var wrapperView = Em.View.extend({
 
   classNames: ['sort-wrapper'],
 
+  willInsertElement:function () {
+    if(this.get('parentView.tableFilteringComplete')){
+      this.get('parentView').set('filteringComplete', true);
+    }
+  },
+
   /**
    * Load sort statuses from local storage
    * Works only after finish filtering in the parent View
@@ -48,8 +54,8 @@ var wrapperView = Em.View.extend({
             sortOrder = true;
           }
           self.sort(childViews.findProperty('name', st.name), sortOrder);
-
           childViews.findProperty('name', st.name).set('status', (sortOrder)?'sorting_desc':'sorting_asc');
+          self.get('controller').set('sortingColumn', childViews.findProperty('name', st.name));
         }
         else {
           childViews.findProperty('name', st.name).set('status', st.status);
@@ -80,13 +86,35 @@ var wrapperView = Em.View.extend({
    * @param property
    * @param order true - DESC, false - ASC
    */
-  sort: function(property, order){
+  sort: function(property, order, returnSorted){
+    returnSorted = returnSorted ? true : false;
     var content = this.get('content').toArray();
     var sortFunc = this.getSortFunc(property, order);
     this.resetSort();
     content.sort(sortFunc);
-    this.set('content', content);
+    if(returnSorted){
+      return content;
+    }else{
+      this.set('content', content);
+    }
   },
+
+  isSorting: false,
+
+  onContentChange: function () {
+    if (!this.get('isSorting') && this.get('content.length')) {
+      this.get('childViews').forEach(function (view) {
+        if (view.status !== 'sorting') {
+          var status = view.get('status');
+          this.set('isSorting', true);
+          this.sort(view, status == 'sorting_desc');
+          this.set('isSorting', false);
+          view.set('status', status);
+        }
+      }, this);
+    }
+  }.observes('content.length'),
+
   /**
    * reset all sorts fields
    */

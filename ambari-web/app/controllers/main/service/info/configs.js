@@ -1626,18 +1626,10 @@ App.MainServiceInfoConfigsController = Em.Controller.extend({
   },
 
   restartAllStaleConfigComponents: function() {
-    var content = this;
-    return App.ModalPopup.show({
-      primary: Em.I18n.t('ok'),
-      secondary: Em.I18n.t('common.cancel'),
-      header: Em.I18n.t('popup.confirmation.commonHeader'),
-      body: Em.I18n.t('question.sure'),
-      content: content,
-      onPrimary: function () {
-        var selectedService = this.content.get('content.id');
-        this.hide();
-        batchUtils.restartAllServiceHostComponents(selectedService, true);
-      }
+    var self = this;
+    App.showConfirmationPopup(function () {
+      var selectedService = self.get('content.id');
+      batchUtils.restartAllServiceHostComponents(selectedService, true);
     });
   },
 
@@ -1738,9 +1730,6 @@ App.MainServiceInfoConfigsController = Em.Controller.extend({
       classNames: ['sixty-percent-width-modal', 'manage-configuration-group-popup'],
       primary: Em.I18n.t('common.save'),
       onPrimary: function() {
-        if (!this.get('enablePrimary')) {
-          return false;
-        }
         var modifiedConfigGroups = this.get('subViewController.hostsModifiedConfigGroups');
         // Save modified config-groups
         if (!!controller) {
@@ -1842,7 +1831,7 @@ App.MainServiceInfoConfigsController = Em.Controller.extend({
 
       updateButtons: function(){
         var modified = this.get('subViewController.isHostsModified');
-        this.set('enablePrimary', modified);
+        this.set('disablePrimary', !modified);
       }.observes('subViewController.isHostsModified'),
       secondary : Em.I18n.t('common.cancel'),
       didInsertElement: function () {}

@@ -203,12 +203,13 @@ App.ManageConfigGroupsController = Em.Controller.extend({
   addHostsCallback: function (selectedHosts) {
     var group = this.get('selectedConfigGroup');
     if (selectedHosts) {
-      var defaultHosts = group.get('parentConfigGroup.hosts');
+      var defaultHosts = group.get('parentConfigGroup.hosts').slice();
       var configGroupHosts = group.get('hosts');
       selectedHosts.forEach(function (hostName) {
         configGroupHosts.pushObject(hostName);
         defaultHosts.removeObject(hostName);
       });
+      group.set('parentConfigGroup.hosts', defaultHosts);
     }
   },
 
@@ -220,11 +221,12 @@ App.ManageConfigGroupsController = Em.Controller.extend({
       return;
     }
     var groupHosts = this.get('selectedConfigGroup.hosts');
-    var defaultGroupHosts = this.get('selectedConfigGroup.parentConfigGroup.hosts');
+    var defaultGroupHosts = this.get('selectedConfigGroup.parentConfigGroup.hosts').slice();
     this.get('selectedHosts').slice().forEach(function (hostName) {
       defaultGroupHosts.pushObject(hostName);
       groupHosts.removeObject(hostName);
     });
+    this.set('selectedConfigGroup.parentConfigGroup.hosts', defaultGroupHosts);
     this.set('selectedHosts', []);
   },
 
@@ -311,13 +313,10 @@ App.ManageConfigGroupsController = Em.Controller.extend({
         }
         this.set('warningMessage', warningMessage);
       }.observes('configGroupName', 'configGroupDesc'),
-      enablePrimary: function () {
-        return this.get('configGroupName').trim().length > 0 && !this.get('warningMessage');
+      disablePrimary: function () {
+        return !(this.get('configGroupName').trim().length > 0 && !this.get('warningMessage'));
       }.property('warningMessage', 'configGroupName', 'configGroupDesc'),
       onPrimary: function () {
-        if (!this.get('enablePrimary')) {
-          return;
-        }
         self.set('selectedConfigGroup.name', this.get('configGroupName'));
         self.set('selectedConfigGroup.description', this.get('configGroupDesc'));
         self.get('selectedConfigGroup.properties').forEach(function(property){
@@ -355,13 +354,10 @@ App.ManageConfigGroupsController = Em.Controller.extend({
         }
         this.set('warningMessage', warningMessage);
       }.observes('configGroupName'),
-      enablePrimary: function () {
-        return this.get('configGroupName').trim().length > 0 && !this.get('warningMessage');
+      disablePrimary: function () {
+        return !(this.get('configGroupName').trim().length > 0 && !this.get('warningMessage'));
       }.property('warningMessage', 'configGroupName'),
       onPrimary: function () {
-        if (!this.get('enablePrimary')) {
-          return false;
-        }
         var defaultConfigGroup = self.get('configGroups').findProperty('isDefault');
         var properties = [];
         var newConfigGroupData = App.ConfigGroup.create({

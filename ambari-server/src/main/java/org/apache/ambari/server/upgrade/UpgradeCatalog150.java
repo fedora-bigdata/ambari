@@ -1,17 +1,38 @@
 package org.apache.ambari.server.upgrade;
 
+import com.google.gson.Gson;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+
 import org.apache.ambari.server.AmbariException;
 import org.apache.ambari.server.actionmanager.HostRoleStatus;
 import org.apache.ambari.server.configuration.Configuration;
 import org.apache.ambari.server.orm.DBAccessor.DBColumnInfo;
 import org.apache.ambari.server.orm.dao.ClusterDAO;
+import org.apache.ambari.server.orm.dao.ClusterServiceDAO;
 import org.apache.ambari.server.orm.dao.ClusterStateDAO;
+import org.apache.ambari.server.orm.dao.HostComponentDesiredStateDAO;
+import org.apache.ambari.server.orm.dao.HostComponentStateDAO;
+import org.apache.ambari.server.orm.dao.HostDAO;
 import org.apache.ambari.server.orm.dao.HostRoleCommandDAO;
+import org.apache.ambari.server.orm.dao.KeyValueDAO;
+import org.apache.ambari.server.orm.dao.ServiceComponentDesiredStateDAO;
+import org.apache.ambari.server.orm.entities.ClusterConfigEntity;
+import org.apache.ambari.server.orm.entities.ClusterConfigEntityPK;
 import org.apache.ambari.server.orm.entities.ClusterEntity;
+import org.apache.ambari.server.orm.entities.ClusterServiceEntity;
+import org.apache.ambari.server.orm.entities.ClusterServiceEntityPK;
 import org.apache.ambari.server.orm.entities.ClusterStateEntity;
+import org.apache.ambari.server.orm.entities.HostComponentDesiredStateEntity;
+import org.apache.ambari.server.orm.entities.HostComponentDesiredStateEntityPK;
+import org.apache.ambari.server.orm.entities.HostComponentStateEntity;
+import org.apache.ambari.server.orm.entities.HostEntity;
 import org.apache.ambari.server.orm.entities.HostRoleCommandEntity;
+import org.apache.ambari.server.orm.entities.KeyValueEntity;
+import org.apache.ambari.server.orm.entities.ServiceComponentDesiredStateEntity;
+import org.apache.ambari.server.orm.entities.ServiceComponentDesiredStateEntityPK;
+import org.apache.ambari.server.state.HostComponentAdminState;
+import org.apache.ambari.server.state.State;
 import org.eclipse.persistence.jpa.JpaEntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,11 +41,13 @@ import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.*;
+
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class UpgradeCatalog150 extends AbstractUpgradeCatalog {
   private static final Logger LOG = LoggerFactory.getLogger(UpgradeCatalog150.class);
@@ -68,9 +91,7 @@ public class UpgradeCatalog150 extends AbstractUpgradeCatalog {
     columns.add(new DBColumnInfo("request_context", String.class, 255, null, true));
     columns.add(new DBColumnInfo("request_type", String.class, 255, null, true));
     columns.add(new DBColumnInfo("start_time", Long.class, null, null, false));
-    columns.add(new DBColumnInfo("target_component", String.class, 255, null, true));
-    columns.add(new DBColumnInfo("target_hosts", String.class, null, null, false));
-    columns.add(new DBColumnInfo("target_service", String .class, 255, null, true));
+    columns.add(new DBColumnInfo("status", String.class, 255));
 
     dbAccessor.createTable("request", columns, "request_id");
 
@@ -194,6 +215,7 @@ public class UpgradeCatalog150 extends AbstractUpgradeCatalog {
 
     // RequestResourceFilter
     columns.clear();
+    columns.add(new DBColumnInfo("filter_id", Long.class, null, null, false));
     columns.add(new DBColumnInfo("request_id", Long.class, null, null, false));
     columns.add(new DBColumnInfo("service_name", String.class, 255, null, true));
     columns.add(new DBColumnInfo("component_name", String.class, 255, null, true));
@@ -243,6 +265,28 @@ public class UpgradeCatalog150 extends AbstractUpgradeCatalog {
       dbAccessor.executeQuery("DROP DATABASE IF EXISTS ambarirca;");
     }
 
+    //Newly created tables should be filled before creating FKs
+    // Request Entries
+    String tableName = "request";
+    if (!dbAccessor.tableExists(tableName)) {
+      String msg = String.format("Table \"%s\" was not created during schema upgrade", tableName);
+      LOG.error(msg);
+      throw new AmbariException(msg);
+    }else if (!dbAccessor.tableHasData(tableName)) {
+      String query;
+      if (getDbType().equals(Configuration.POSTGRES_DB_NAME)) {
+        query = getPostgresRequestUpgradeQuery();
+      } else if (getDbType().equals(Configuration.ORACLE_DB_NAME)) {
+        query = getOracleRequestUpgradeQuery();
+      } else {
+        query = getMysqlRequestUpgradeQuery();
+      }
+
+      dbAccessor.executeQuery(query);
+    } else {
+      LOG.info("Table {} already filled", tableName);
+    }
+
     // ========================================================================
     // Add constraints
 
@@ -260,9 +304,6 @@ public class UpgradeCatalog150 extends AbstractUpgradeCatalog {
     dbAccessor.addFKConstraint("clusterconfigmapping", "FK_clustercfgmap_cluster_id", "cluster_id", "clusters", "cluster_id", true);
     dbAccessor.addFKConstraint("requestresourcefilter", "FK_requestresourcefilter_req_id", "request_id", "request", "request_id", true);
 
-    // ========================================================================
-    // Finally update schema version
-    updateMetaInfoVersion(getTargetVersion());
   }
 
   private void moveRCATableInMySQL(String tableName, String dbName) throws SQLException {
@@ -301,22 +342,6 @@ public class UpgradeCatalog150 extends AbstractUpgradeCatalog {
 
 
     // TODO: Convert all possible native queries using Criteria builder
-    // Request Entries
-    tableName = "request";
-    if (dbAccessor.tableExists(tableName) &&
-      !dbAccessor.tableHasData(tableName)) {
-
-      String query;
-      if (dbType.equals(Configuration.POSTGRES_DB_NAME)) {
-        query = getPostgresRequestUpgradeQuery();
-      } else if (dbType.equals(Configuration.ORACLE_DB_NAME)) {
-        query = getOracleRequestUpgradeQuery();
-      } else {
-        query = getMysqlRequestUpgradeQuery();
-      }
-
-      dbAccessor.executeQuery(query);
-    }
 
     // Sequences
     if (dbAccessor.tableExists("ambari_sequences")) {
@@ -336,6 +361,10 @@ public class UpgradeCatalog150 extends AbstractUpgradeCatalog {
     //add new sequence for config groups
     dbAccessor.executeQuery("INSERT INTO ambari_sequences(sequence_name, \"value\") " +
       "VALUES('configgroup_id_seq', 1)", true);
+    dbAccessor.executeQuery("INSERT INTO ambari_sequences(sequence_name, \"value\") " +
+      "VALUES('requestschedule_id_seq', 1)", true);
+    dbAccessor.executeQuery("INSERT INTO ambari_sequences(sequence_name, \"value\") " +
+      "VALUES('resourcefilter_id_seq', 1)", true);
 
     //clear cache due to direct table manipulation
     ((JpaEntityManager)em.getDelegate()).getServerSession().getIdentityMapAccessor().invalidateAll();
@@ -411,9 +440,174 @@ public class UpgradeCatalog150 extends AbstractUpgradeCatalog {
         }
       }
     });
+    
+    // add history server on the host where jobtracker is
+    executeInTransaction(new Runnable() {
+      @Override
+      public void run() {
+        addHistoryServer();
+      }
+    });
+    
+      
+    // ========================================================================
+    // Finally update schema version
+    updateMetaInfoVersion(getTargetVersion());
 
+         // Move decommissioned datanode data to new table
+    executeInTransaction(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          processDecommissionedDatanodes();
+        } catch (Exception e) {
+          LOG.warn("Updating decommissioned datanodes to new format threw " +
+            "exception. ", e);
+        }
+      }
+    });
+  }
+  
+  protected void addHistoryServer() {
+    ClusterDAO clusterDAO = injector.getInstance(ClusterDAO.class);
+    ClusterServiceDAO clusterServiceDAO = injector.getInstance(ClusterServiceDAO.class);
+    ServiceComponentDesiredStateDAO serviceComponentDesiredStateDAO = injector.getInstance(ServiceComponentDesiredStateDAO.class);
+    
+    List<ClusterEntity> clusterEntities = clusterDAO.findAll();
+    for (final ClusterEntity clusterEntity : clusterEntities) {
+      ServiceComponentDesiredStateEntityPK pkHS = new ServiceComponentDesiredStateEntityPK();
+      pkHS.setComponentName("HISTORYSERVER");
+      pkHS.setClusterId(clusterEntity.getClusterId());
+      pkHS.setServiceName("MAPREDUCE");
+      
+      ServiceComponentDesiredStateEntity serviceComponentDesiredStateEntityHS = serviceComponentDesiredStateDAO.findByPK(pkHS);
+      
+      // already have historyserver
+      if(serviceComponentDesiredStateEntityHS != null)
+        continue;
+      
+      ServiceComponentDesiredStateEntityPK pkJT = new ServiceComponentDesiredStateEntityPK();
+      pkJT.setComponentName("JOBTRACKER");
+      pkJT.setClusterId(clusterEntity.getClusterId());
+      pkJT.setServiceName("MAPREDUCE");
+      
+      ServiceComponentDesiredStateEntity serviceComponentDesiredStateEntityJT = serviceComponentDesiredStateDAO.findByPK(pkJT);
+      
+      // no jobtracker present probably mapreduce is not installed
+      if(serviceComponentDesiredStateEntityJT == null)
+        continue;
 
+      
+      HostComponentStateEntity jtHostComponentStateEntity = serviceComponentDesiredStateEntityJT.getHostComponentStateEntities().iterator().next();
+      String jtHostname = jtHostComponentStateEntity.getHostName();
+      State jtCurrState = jtHostComponentStateEntity.getCurrentState();
+          
+      ClusterServiceEntityPK pk = new ClusterServiceEntityPK();
+      pk.setClusterId(clusterEntity.getClusterId());
+      pk.setServiceName("MAPREDUCE");
+      
+      ClusterServiceEntity clusterServiceEntity = clusterServiceDAO.findByPK(pk);
+      
+      
+      final ServiceComponentDesiredStateEntity serviceComponentDesiredStateEntity = new ServiceComponentDesiredStateEntity();
+      serviceComponentDesiredStateEntity.setComponentName("HISTORYSERVER");
+      serviceComponentDesiredStateEntity.setDesiredStackVersion(clusterEntity.getDesiredStackVersion());
+      serviceComponentDesiredStateEntity.setDesiredState(State.STARTED);
+      serviceComponentDesiredStateEntity.setClusterServiceEntity(clusterServiceEntity);
+      serviceComponentDesiredStateEntity.setHostComponentDesiredStateEntities(new ArrayList<HostComponentDesiredStateEntity>());
 
+      final HostComponentStateEntity stateEntity = new HostComponentStateEntity();
+      stateEntity.setHostName(jtHostname);
+      stateEntity.setCurrentState(jtCurrState);
+      stateEntity.setCurrentStackVersion(clusterEntity.getDesiredStackVersion());
+      
+      final HostComponentDesiredStateEntity desiredStateEntity = new HostComponentDesiredStateEntity();
+      desiredStateEntity.setDesiredState(State.STARTED);
+      desiredStateEntity.setDesiredStackVersion(clusterEntity.getDesiredStackVersion());
+      
+      persistComponentEntities(stateEntity, desiredStateEntity, serviceComponentDesiredStateEntity);
+    }
+  }
+    
+  private void persistComponentEntities(HostComponentStateEntity stateEntity, HostComponentDesiredStateEntity desiredStateEntity, ServiceComponentDesiredStateEntity serviceComponentDesiredStateEntity) {
+    ServiceComponentDesiredStateDAO serviceComponentDesiredStateDAO = injector.getInstance(ServiceComponentDesiredStateDAO.class);
+    HostComponentStateDAO hostComponentStateDAO = injector.getInstance(HostComponentStateDAO.class);
+    HostComponentDesiredStateDAO hostComponentDesiredStateDAO = injector.getInstance(HostComponentDesiredStateDAO.class);
+    HostDAO hostDAO = injector.getInstance(HostDAO.class);
+    
+    HostEntity hostEntity = hostDAO.findByName(stateEntity.getHostName());
+    hostEntity.getHostComponentStateEntities().add(stateEntity);
+    hostEntity.getHostComponentDesiredStateEntities().add(desiredStateEntity);
+
+    serviceComponentDesiredStateEntity.getHostComponentDesiredStateEntities().add(desiredStateEntity);
+
+    desiredStateEntity.setServiceComponentDesiredStateEntity(serviceComponentDesiredStateEntity);
+    desiredStateEntity.setHostEntity(hostEntity);
+    stateEntity.setServiceComponentDesiredStateEntity(serviceComponentDesiredStateEntity);
+    stateEntity.setHostEntity(hostEntity);
+
+    hostComponentStateDAO.create(stateEntity);
+    hostComponentDesiredStateDAO.create(desiredStateEntity);
+
+    serviceComponentDesiredStateDAO.create(serviceComponentDesiredStateEntity);
+    hostDAO.merge(hostEntity);
+  }
+
+  protected void processDecommissionedDatanodes() {
+    KeyValueDAO keyValueDAO = injector.getInstance(KeyValueDAO.class);
+    ClusterDAO clusterDAO = injector.getInstance(ClusterDAO.class);
+    Gson gson = injector.getInstance(Gson.class);
+    HostComponentDesiredStateDAO desiredStateDAO = injector.getInstance
+      (HostComponentDesiredStateDAO.class);
+
+    KeyValueEntity keyValueEntity = keyValueDAO.findByKey("decommissionDataNodesTag");
+    String value = null;
+    if (keyValueEntity != null) {
+      value = keyValueEntity.getValue();
+      if (value != null && !value.isEmpty()) {
+        List<ClusterEntity> clusterEntities = clusterDAO.findAll();
+        for (ClusterEntity clusterEntity : clusterEntities) {
+          Long clusterId = clusterEntity.getClusterId();
+          ClusterConfigEntityPK configEntityPK = new ClusterConfigEntityPK();
+          configEntityPK.setClusterId(clusterId);
+          configEntityPK.setType("hdfs-exclude-file");
+          configEntityPK.setTag(value.trim());
+          ClusterConfigEntity configEntity = clusterDAO.findConfig(configEntityPK);
+          if (configEntity != null) {
+            String configData = configEntity.getData();
+            if (configData != null) {
+              Map<String, String> properties = gson.<Map<String, String>>fromJson(configData, Map.class);
+              if (properties != null && !properties.isEmpty()) {
+                String decommissionedNodes = properties.get("datanodes");
+                if (decommissionedNodes != null) {
+                  String[] nodes = decommissionedNodes.split(",");
+                  if (nodes.length > 0) {
+                    for (String node : nodes) {
+                      HostComponentDesiredStateEntityPK entityPK =
+                        new HostComponentDesiredStateEntityPK();
+                      entityPK.setClusterId(clusterId);
+                      entityPK.setServiceName("HDFS");
+                      entityPK.setComponentName("DATANODE");
+                      entityPK.setHostName(node.trim());
+                      HostComponentDesiredStateEntity desiredStateEntity =
+                        desiredStateDAO.findByPK(entityPK);
+                      desiredStateEntity.setAdminState(HostComponentAdminState.DECOMMISSIONED);
+                      desiredStateDAO.merge(desiredStateEntity);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      // Rename saved key value entity so that the move is finalized
+      KeyValueEntity newEntity = new KeyValueEntity();
+      newEntity.setKey("decommissionDataNodesTag-Moved");
+      newEntity.setValue(value);
+      keyValueDAO.create(newEntity);
+      keyValueDAO.remove(keyValueEntity);
+    }
   }
 
   private String getPostgresServiceConfigMappingQuery() {

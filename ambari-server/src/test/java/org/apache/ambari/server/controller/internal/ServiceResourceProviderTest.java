@@ -24,6 +24,7 @@ import static org.easymock.EasyMock.capture;
 import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.createNiceMock;
 import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.isNull;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
 
@@ -256,6 +257,7 @@ public class ServiceResourceProviderTest {
     Service service0 = createNiceMock(Service.class);
     ServiceFactory serviceFactory = createNiceMock(ServiceFactory.class);
     AmbariMetaInfo ambariMetaInfo = createNiceMock(AmbariMetaInfo.class);
+    RequestStageContainer requestStages = createNiceMock(RequestStageContainer.class);
     RequestStatusResponse requestStatusResponse = createNiceMock(RequestStatusResponse.class);
 
     Map<String, String> mapRequestProps = new HashMap<String, String>();
@@ -281,12 +283,16 @@ public class ServiceResourceProviderTest {
     Capture<Collection<ServiceComponentHost>> ignoredScHostsCapture = new Capture<Collection<ServiceComponentHost>>();
     Capture<Cluster> clusterCapture = new Capture<Cluster>();
 
-    expect(managementController.createStages(capture(clusterCapture), capture(requestPropertiesCapture), capture(requestParametersCapture), capture(changedServicesCapture), capture(changedCompsCapture), capture(changedScHostsCapture), capture(ignoredScHostsCapture), anyBoolean(), anyBoolean()
-    )).andReturn(requestStatusResponse);
+    expect(managementController.addStages((RequestStageContainer) isNull(), capture(clusterCapture), capture(requestPropertiesCapture),
+        capture(requestParametersCapture), capture(changedServicesCapture), capture(changedCompsCapture),
+        capture(changedScHostsCapture), capture(ignoredScHostsCapture), anyBoolean(), anyBoolean()
+    )).andReturn(requestStages);
+    requestStages.persist();
+    expect(requestStages.getRequestStatusResponse()).andReturn(requestStatusResponse);
 
     // replay
     replay(managementController, clusters, cluster,
-        service0, serviceFactory, ambariMetaInfo, requestStatusResponse);
+        service0, serviceFactory, ambariMetaInfo, requestStages, requestStatusResponse);
 
     ResourceProvider provider = getServiceProvider(managementController);
 
@@ -305,7 +311,7 @@ public class ServiceResourceProviderTest {
 
     // verify
     verify(managementController, clusters, cluster,
-        service0, serviceFactory, ambariMetaInfo, requestStatusResponse);
+        service0, serviceFactory, ambariMetaInfo, requestStages, requestStatusResponse);
   }
 
   @Test
@@ -318,6 +324,8 @@ public class ServiceResourceProviderTest {
     Service service0 = createNiceMock(Service.class);
     ServiceResponse serviceResponse0 = createNiceMock(ServiceResponse.class);
     AmbariMetaInfo ambariMetaInfo = createNiceMock(AmbariMetaInfo.class);
+    RequestStageContainer requestStages1 = createNiceMock(RequestStageContainer.class);
+    RequestStageContainer requestStages2 = createNiceMock(RequestStageContainer.class);
 
     RequestStatusResponse response1 = createNiceMock(RequestStatusResponse.class);
     RequestStatusResponse response2 = createNiceMock(RequestStatusResponse
@@ -357,14 +365,24 @@ public class ServiceResourceProviderTest {
     Capture<Collection<ServiceComponentHost>> ignoredScHostsCapture = new Capture<Collection<ServiceComponentHost>>();
     Capture<Cluster> clusterCapture = new Capture<Cluster>();
 
-    expect(managementController1.createStages(capture(clusterCapture), capture(requestPropertiesCapture), capture(requestParametersCapture), capture(changedServicesCapture), capture(changedCompsCapture), capture(changedScHostsCapture), capture(ignoredScHostsCapture), anyBoolean(), anyBoolean()
-    )).andReturn(response1);
+    expect(managementController1.addStages((RequestStageContainer) isNull(), capture(clusterCapture), capture(requestPropertiesCapture),
+        capture(requestParametersCapture), capture(changedServicesCapture), capture(changedCompsCapture),
+        capture(changedScHostsCapture), capture(ignoredScHostsCapture), anyBoolean(), anyBoolean()
+    )).andReturn(requestStages1);
 
-    expect(managementController2.createStages(capture(clusterCapture), capture(requestPropertiesCapture), capture(requestParametersCapture), capture(changedServicesCapture), capture(changedCompsCapture), capture(changedScHostsCapture), capture(ignoredScHostsCapture), anyBoolean(), anyBoolean()
-    )).andReturn(response2);
+    expect(managementController2.addStages((RequestStageContainer) isNull(), capture(clusterCapture), capture(requestPropertiesCapture),
+        capture(requestParametersCapture), capture(changedServicesCapture), capture(changedCompsCapture),
+        capture(changedScHostsCapture), capture(ignoredScHostsCapture), anyBoolean(), anyBoolean()
+    )).andReturn(requestStages2);
+
+    requestStages1.persist();
+    expect(requestStages1.getRequestStatusResponse()).andReturn(response1);
+
+    requestStages2.persist();
+    expect(requestStages2.getRequestStatusResponse()).andReturn(response2);
 
     // replay
-    replay(managementController1, response1, managementController2, response2,
+    replay(managementController1, response1, managementController2, requestStages1, requestStages2, response2,
         clusters, cluster, service0, serviceResponse0, ambariMetaInfo);
 
     ResourceProvider provider1 = getServiceProvider(managementController1);
@@ -397,7 +415,7 @@ public class ServiceResourceProviderTest {
     provider2.updateResources(request, predicate2);
 
     // verify
-    verify(managementController1, response1, managementController2, response2,
+    verify(managementController1, response1, managementController2, requestStages1, requestStages2, response2,
         clusters, cluster, service0, serviceResponse0, ambariMetaInfo);
   }
 
@@ -950,6 +968,54 @@ public class ServiceResourceProviderTest {
   }
 
   @Test
+  public void testGangliaServiceState_ArbitraryComponentOrder_STARTED() throws Exception{
+    AmbariManagementController managementController = createMock(AmbariManagementController.class);
+    Clusters clusters = createNiceMock(Clusters.class);
+    Cluster cluster = createNiceMock(Cluster.class);
+    AmbariMetaInfo ambariMetaInfo = createNiceMock(AmbariMetaInfo.class);
+    StackId stackId = createNiceMock(StackId.class);
+    ComponentInfo componentInfo = createNiceMock(ComponentInfo.class);
+
+    ServiceComponentHostResponse shr1 = new ServiceComponentHostResponse("C1", "GANGLIA", "GANGLIA_MONITOR", "Host100", "STARTED", "", null, null, null);
+    ServiceComponentHostResponse shr2 = new ServiceComponentHostResponse("C1", "GANGLIA", "GANGLIA_MONITOR", "Host199", "UNKNOWN", "", null, null, null);
+    ServiceComponentHostResponse shr3 = new ServiceComponentHostResponse("C1", "GANGLIA", "GANGLIA_SERVER", "Host100", "STARTED", "", null, null, null);
+
+    Set<ServiceComponentHostResponse> responses = new LinkedHashSet<ServiceComponentHostResponse>();
+    responses.add(shr1);
+    responses.add(shr2);
+    responses.add(shr3);
+
+    // set expectations
+    expect(managementController.getAmbariMetaInfo()).andReturn(ambariMetaInfo).anyTimes();
+    expect(managementController.getClusters()).andReturn(clusters).anyTimes();
+    expect(clusters.getCluster("C1")).andReturn(cluster).anyTimes();
+    expect(componentInfo.isMaster()).andReturn(false).once();
+    expect(componentInfo.isMaster()).andReturn(false).once();
+    expect(componentInfo.isMaster()).andReturn(true).once();
+    expect(componentInfo.isClient()).andReturn(false).anyTimes();
+    expect(managementController.getHostComponents((Set<ServiceComponentHostRequest>) anyObject())).andReturn(responses).anyTimes();
+    expect(cluster.getDesiredStackVersion()).andReturn(stackId);
+
+    expect(stackId.getStackName()).andReturn("S1").anyTimes();
+    expect(stackId.getStackVersion()).andReturn("V1").anyTimes();
+
+
+    expect(ambariMetaInfo.getComponentCategory((String) anyObject(), (String) anyObject(),
+            (String) anyObject(), (String) anyObject())).andReturn(componentInfo).anyTimes();
+
+    // replay
+    replay(managementController, clusters, cluster, ambariMetaInfo, stackId, componentInfo);
+
+    ServiceResourceProvider.ServiceState serviceState = new ServiceResourceProvider.DefaultServiceState();
+
+    State state = serviceState.getState(managementController, "C1", "GANGLIA");
+    Assert.assertEquals(State.STARTED, state);
+
+    // verify
+    verify(managementController, clusters, cluster, ambariMetaInfo, stackId, componentInfo);
+  }
+
+  @Test
   public void testDefaultServiceState_ClientOnly_INSTALLED() throws Exception{
     AmbariManagementController managementController = createMock(AmbariManagementController.class);
     Clusters clusters = createNiceMock(Clusters.class);
@@ -1057,7 +1123,10 @@ public class ServiceResourceProviderTest {
                                                      boolean reconfigureClients) throws AmbariException
   {
     ServiceResourceProvider provider = getServiceProvider(controller);
-    return provider.updateServices(requests, requestProperties, runSmokeTest, reconfigureClients);
+
+    RequestStageContainer request = provider.updateServices(null, requests, requestProperties, runSmokeTest, reconfigureClients);
+    request.persist();
+    return request.getRequestStatusResponse();
   }
 
   public static RequestStatusResponse deleteServices(AmbariManagementController controller, Set<ServiceRequest> requests)

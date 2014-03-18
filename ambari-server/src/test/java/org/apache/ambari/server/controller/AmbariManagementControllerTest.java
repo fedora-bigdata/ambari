@@ -259,7 +259,6 @@ public class AmbariManagementControllerTest {
     controller.createHostComponents(requests);
   }
 
-  @Transactional
   private Long createConfigGroup(Cluster cluster, String name, String tag,
                               List<String> hosts, List<Config> configs)
                               throws AmbariException {
@@ -973,7 +972,6 @@ public class AmbariManagementControllerTest {
       fail("ServiceComponentHost creation should fail for invalid state");
     } catch (Exception e) {
       // Expected
-      e.printStackTrace();
     }
 
     try {
@@ -4008,8 +4006,107 @@ public class AmbariManagementControllerTest {
     Assert.assertTrue(hostParams.containsKey(ExecutionCommand.KeyNames.MYSQL_JDBC_URL));
     Assert.assertTrue(hostParams.containsKey(ExecutionCommand.KeyNames.ORACLE_JDBC_URL));
     Assert.assertEquals("CLIENT", roleParams.get(ExecutionCommand.KeyNames.COMPONENT_CATEGORY));
+    
+    // verify passive info is not passed when not NAGIOS
+    Assert.assertNull(hrc.getExecutionCommandWrapper().getExecutionCommand().getPassiveInfo());
   }
 
+  @Test
+  public void testPassiveSentWithNagiosRestart() throws AmbariException {
+    setupClusterWithHosts("c1", "HDP-2.0.7", Arrays.asList("h1"), "centos5");
+
+    Cluster cluster = clusters.getCluster("c1");
+    cluster.setDesiredStackVersion(new StackId("HDP-2.0.7"));
+    cluster.setCurrentStackVersion(new StackId("HDP-2.0.7"));
+
+    Service hdfs = cluster.addService("HDFS");
+    hdfs.persist();
+    hdfs.addServiceComponent(Role.HDFS_CLIENT.name()).persist();
+    hdfs.addServiceComponent(Role.NAMENODE.name()).persist();
+    hdfs.addServiceComponent(Role.DATANODE.name()).persist();
+    
+    hdfs.getServiceComponent(Role.HDFS_CLIENT.name()).addServiceComponentHost("h1").persist();
+    hdfs.getServiceComponent(Role.NAMENODE.name()).addServiceComponentHost("h1").persist();
+    hdfs.getServiceComponent(Role.DATANODE.name()).addServiceComponentHost("h1").persist();
+    
+
+    
+    Service nagios = cluster.addService("NAGIOS");
+    nagios.persist();
+    nagios.addServiceComponent(Role.NAGIOS_SERVER.name()).persist();
+    nagios.getServiceComponent(Role.NAGIOS_SERVER.name()).addServiceComponentHost("h1").persist();
+    
+    installService("c1", "HDFS", false, false);
+    installService("c1", "NAGIOS", false, false);
+
+    startService("c1", "HDFS", false, false);
+    startService("c1", "NAGIOS", false, false);
+
+    // set this after starting - setting it before will skip it due to rules
+    // around bulk starts
+    hdfs.getServiceComponent(Role.DATANODE.name()).getServiceComponentHost(
+        "h1").setMaintenanceState(MaintenanceState.ON);    
+    
+    Cluster c = clusters.getCluster("c1");
+    Service s = c.getService("HDFS");
+
+    Assert.assertEquals(State.STARTED, s.getDesiredState());
+    for (ServiceComponent sc : s.getServiceComponents().values()) {
+      for (ServiceComponentHost sch : sc.getServiceComponentHosts().values()) {
+        if (sc.isClientComponent()) {
+          Assert.assertEquals(State.INSTALLED, sch.getDesiredState());
+        } else {
+          Assert.assertEquals(State.STARTED, sch.getDesiredState());
+        }
+      }
+    }
+
+    Map<String, String> params = new HashMap<String, String>() {{
+      put("test", "test");
+    }};
+    RequestResourceFilter resourceFilter = new RequestResourceFilter(
+      "NAGIOS",
+      "NAGIOS_SERVER",
+      new ArrayList<String>() {{ add("h1"); }});
+    ExecuteActionRequest actionRequest = new ExecuteActionRequest("c1",
+      "RESTART", params);
+    actionRequest.getResourceFilters().add(resourceFilter);
+
+    Map<String, String> requestProperties = new HashMap<String, String>();
+    requestProperties.put(REQUEST_CONTEXT_PROPERTY, "Called from a test");
+
+    RequestStatusResponse response = controller.createAction(actionRequest, requestProperties);
+
+    List<Stage> stages = actionDB.getAllStages(response.getRequestId());
+    Assert.assertNotNull(stages);
+
+    HostRoleCommand hrc = null;
+    for (Stage stage : stages) {
+      for (HostRoleCommand cmd : stage.getOrderedHostRoleCommands()) {
+        if (cmd.getRole().equals(Role.NAGIOS_SERVER)) {
+          hrc = cmd;
+        }
+      }
+    }
+    Assert.assertNotNull(hrc);
+    Assert.assertEquals("RESTART NAGIOS/NAGIOS_SERVER", hrc.getCommandDetail());
+
+    
+    Set<Map<String, String>> pi =
+        hrc.getExecutionCommandWrapper().getExecutionCommand().getPassiveInfo();
+    
+    Assert.assertNotNull(pi);
+    Assert.assertTrue(pi.size() > 0);
+    Map<String, String> map = pi.iterator().next();
+    Assert.assertTrue(map.containsKey("host"));
+    Assert.assertTrue(map.containsKey("service"));
+    Assert.assertTrue(map.containsKey("component"));
+    Assert.assertEquals("h1", map.get("host"));
+    Assert.assertEquals("HDFS", map.get("service"));
+    Assert.assertEquals("DATANODE", map.get("component"));
+  }  
+  
+  
   @SuppressWarnings("serial")
   @Test
   public void testCreateActionsFailures() throws Exception {
@@ -9256,6 +9353,7 @@ public class AmbariManagementControllerTest {
     Injector injector = createStrictMock(Injector.class);
     Capture<AmbariManagementController> controllerCapture = new Capture<AmbariManagementController>();
     Clusters clusters = createNiceMock(Clusters.class);
+    MaintenanceStateHelper maintHelper = createNiceMock(MaintenanceStateHelper.class);
 
     Cluster cluster = createNiceMock(Cluster.class);
     Service service = createNiceMock(Service.class);
@@ -9271,6 +9369,7 @@ public class AmbariManagementControllerTest {
     // constructor init
     injector.injectMembers(capture(controllerCapture));
     expect(injector.getInstance(Gson.class)).andReturn(null);
+    expect(injector.getInstance(MaintenanceStateHelper.class)).andReturn(maintHelper);
 
     // getServices
     expect(clusters.getCluster("cluster1")).andReturn(cluster);
@@ -9278,7 +9377,7 @@ public class AmbariManagementControllerTest {
 
     expect(service.convertToResponse()).andReturn(response);
     // replay mocks
-    replay(injector, clusters, cluster, service, response);
+    replay(maintHelper, injector, clusters, cluster, service, response);
 
     //test
     AmbariManagementController controller = new AmbariManagementControllerImpl(null, clusters, injector);
@@ -9301,7 +9400,7 @@ public class AmbariManagementControllerTest {
     Injector injector = createStrictMock(Injector.class);
     Capture<AmbariManagementController> controllerCapture = new Capture<AmbariManagementController>();
     Clusters clusters = createNiceMock(Clusters.class);
-
+    MaintenanceStateHelper maintHelper = createNiceMock(MaintenanceStateHelper.class);
     Cluster cluster = createNiceMock(Cluster.class);
 
     // requests
@@ -9313,13 +9412,14 @@ public class AmbariManagementControllerTest {
     // constructor init
     injector.injectMembers(capture(controllerCapture));
     expect(injector.getInstance(Gson.class)).andReturn(null);
+    expect(injector.getInstance(MaintenanceStateHelper.class)).andReturn(maintHelper);
 
     // getServices
     expect(clusters.getCluster("cluster1")).andReturn(cluster);
     expect(cluster.getService("service1")).andThrow(new ServiceNotFoundException("custer1", "service1"));
 
     // replay mocks
-    replay(injector, clusters, cluster);
+    replay(maintHelper, injector, clusters, cluster);
 
     //test
     AmbariManagementController controller = new AmbariManagementControllerImpl(null, clusters, injector);
@@ -9346,6 +9446,7 @@ public class AmbariManagementControllerTest {
     Injector injector = createStrictMock(Injector.class);
     Capture<AmbariManagementController> controllerCapture = new Capture<AmbariManagementController>();
     Clusters clusters = createNiceMock(Clusters.class);
+    MaintenanceStateHelper maintHelper = createNiceMock(MaintenanceStateHelper.class);
 
     Cluster cluster = createNiceMock(Cluster.class);
     Service service1 = createNiceMock(Service.class);
@@ -9369,6 +9470,7 @@ public class AmbariManagementControllerTest {
     // constructor init
     injector.injectMembers(capture(controllerCapture));
     expect(injector.getInstance(Gson.class)).andReturn(null);
+    expect(injector.getInstance(MaintenanceStateHelper.class)).andReturn(maintHelper);
 
     // getServices
     expect(clusters.getCluster("cluster1")).andReturn(cluster).times(4);
@@ -9380,7 +9482,8 @@ public class AmbariManagementControllerTest {
     expect(service1.convertToResponse()).andReturn(response);
     expect(service2.convertToResponse()).andReturn(response2);
     // replay mocks
-    replay(injector, clusters, cluster, service1, service2, response, response2);
+    replay(maintHelper, injector, clusters, cluster, service1, service2,
+      response, response2);
 
     //test
     AmbariManagementController controller = new AmbariManagementControllerImpl(null, clusters, injector);
@@ -9461,6 +9564,57 @@ public class AmbariManagementControllerTest {
       ShortTaskStatus task = (ShortTaskStatus)obj;
       return task.getRole().equals(role);
     }
+  }
+
+  @Test
+  public void testReinstallClientSchSkippedInMaintenance() throws Exception {
+    Cluster c1 = setupClusterWithHosts("c1", "HDP-1.2.0",
+      new ArrayList<String>() {{
+        add("h1");
+        add("h2");
+        add("h3");
+      }},
+      "centos5");
+
+    Service hdfs = c1.addService("HDFS");
+    hdfs.persist();
+    createServiceComponent("c1", "HDFS", "NAMENODE", State.INIT);
+    createServiceComponent("c1", "HDFS", "DATANODE", State.INIT);
+    createServiceComponent("c1", "HDFS", "HDFS_CLIENT", State.INIT);
+
+    createServiceComponentHost("c1", "HDFS", "NAMENODE", "h1", State.INIT);
+    createServiceComponentHost("c1", "HDFS", "DATANODE", "h1", State.INIT);
+    createServiceComponentHost("c1", "HDFS", "HDFS_CLIENT", "h1", State.INIT);
+    createServiceComponentHost("c1", "HDFS", "HDFS_CLIENT", "h2", State.INIT);
+    createServiceComponentHost("c1", "HDFS", "HDFS_CLIENT", "h3", State.INIT);
+
+    installService("c1", "HDFS", false, false);
+
+    clusters.getHost("h3").setMaintenanceState(c1.getClusterId(), MaintenanceState.ON);
+
+    Long id = startService("c1", "HDFS", false ,true);
+
+    Assert.assertNotNull(id);
+    List<Stage> stages = actionDB.getAllStages(id);
+    Assert.assertNotNull(stages);
+    HostRoleCommand hrc1 = null;
+    HostRoleCommand hrc2 = null;
+    HostRoleCommand hrc3 = null;
+    for (Stage s : stages) {
+      for (HostRoleCommand hrc : s.getOrderedHostRoleCommands()) {
+        if (hrc.getRole().equals(Role.HDFS_CLIENT) && hrc.getHostName().equals("h1")) {
+          hrc1 = hrc;
+        } else if (hrc.getRole().equals(Role.HDFS_CLIENT) && hrc.getHostName().equals("h2")) {
+          hrc2 = hrc;
+        } else if (hrc.getRole().equals(Role.HDFS_CLIENT) && hrc.getHostName().equals("h3")) {
+          hrc3 = hrc;
+        }
+      }
+    }
+
+    Assert.assertNotNull(hrc1);
+    Assert.assertNotNull(hrc2);
+    Assert.assertNull(hrc3);
   }
 
   @Test

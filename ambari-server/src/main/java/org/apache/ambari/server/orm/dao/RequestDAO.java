@@ -23,6 +23,7 @@ import com.google.inject.Provider;
 import com.google.inject.persist.Transactional;
 import org.apache.ambari.server.actionmanager.HostRoleStatus;
 import org.apache.ambari.server.orm.entities.RequestEntity;
+import org.apache.ambari.server.orm.entities.RequestResourceFilterEntity;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
@@ -45,6 +46,16 @@ public class RequestDAO {
     TypedQuery<RequestEntity> query = entityManagerProvider.get().createQuery("SELECT request FROM RequestEntity request " +
         "WHERE request.requestId IN ?1", RequestEntity.class);
     return daoUtils.selectList(query, requestIds);
+  }
+
+  @Transactional
+  public List<RequestEntity> findAll() {
+    return daoUtils.selectAll(entityManagerProvider.get(), RequestEntity.class);
+  }
+
+  @Transactional
+  public List<RequestResourceFilterEntity> findAllResourceFilters() {
+    return daoUtils.selectAll(entityManagerProvider.get(), RequestResourceFilterEntity.class);
   }
 
   @Transactional

@@ -44,6 +44,10 @@ App.MainHostDetailsController = Em.Controller.extend({
     App.router.transitionTo('main.services.service.summary',service);
   },
 
+  serviceActiveComponents: function() {
+    return this.get('content.hostComponents').filterProperty('service.isInPassive',true);
+  }.property('content.hostComponents'),
+
   /**
    * Send specific command to server
    * @param url
@@ -102,10 +106,10 @@ App.MainHostDetailsController = Em.Controller.extend({
    * @param component  When <code>null</code> all startable components are started. 
    * @param context  Context under which this command is beign sent. 
    */
-  sendStartComponentCommand: function(component, context) {
-    var url = component !== null ?
-        '/hosts/' + this.get('content.hostName') + '/host_components/' + component.get('componentName').toUpperCase() : 
-        '/hosts/' + this.get('content.hostName') + '/host_components?HostRoles/maintenance_state=OFF';
+  sendStartComponentCommand: function(components, context) {
+    var url = Em.isArray(components) ?
+        '/hosts/' + this.get('content.hostName') + '/host_components' :
+        '/hosts/' + this.get('content.hostName') + '/host_components/' + components.get('componentName').toUpperCase();
     var dataToSend = {
       RequestInfo : {
         "context" : context
@@ -116,17 +120,8 @@ App.MainHostDetailsController = Em.Controller.extend({
         }
       }
     };
-    if (component === null) {
-      var allComponents = this.get('content.hostComponents');
-      var startable = [];
-      allComponents.forEach(function (c) {
-        if (c.get('passiveState') == 'OFF') {
-          if (c.get('isMaster') || c.get('isSlave')) {
-            startable.push(c.get('componentName'));
-          }
-        }
-      });
-      dataToSend.RequestInfo.query = "HostRoles/component_name.in(" + startable.join(',') + ")";
+    if (Em.isArray(components)) {
+      dataToSend.RequestInfo.query = "HostRoles/component_name.in(" + components.mapProperty('componentName').join(',') + ")";
     }
     this.sendCommandToServer(url, dataToSend, 'PUT',
       function(requestId){
@@ -138,7 +133,7 @@ App.MainHostDetailsController = Em.Controller.extend({
       console.log('Send request for STARTING successfully');
 
       if (App.testMode) {
-        if(component === null){
+        if(Em.isArray(components)){
           var allComponents = this.get('content.hostComponents');
           allComponents.forEach(function(component){
             component.set('workStatus', App.HostComponentStatus.stopping);
@@ -147,9 +142,9 @@ App.MainHostDetailsController = Em.Controller.extend({
             },App.testModeDelayForActions);
           });
         } else {
-          component.set('workStatus', App.HostComponentStatus.starting);
+          components.set('workStatus', App.HostComponentStatus.starting);
           setTimeout(function(){
-            component.set('workStatus', App.HostComponentStatus.started);
+            components.set('workStatus', App.HostComponentStatus.started);
           },App.testModeDelayForActions);
         }
       } else {
@@ -177,27 +172,33 @@ App.MainHostDetailsController = Em.Controller.extend({
     var isLastComponent = (App.HostComponent.find().filterProperty('componentName', componentName).get('length') === 1);
     App.ModalPopup.show({
       header: Em.I18n.t('popup.confirmation.commonHeader'),
+      primary: Em.I18n.t('hosts.host.deleteComponent.popup.confirm'),
       bodyClass: Ember.View.extend({
         templateName: require('templates/main/host/details/deleteComponentPopup')
       }),
-      enablePrimary: false,
+      isChecked: false,
+      disablePrimary: function () {
+        return !this.get('isChecked');
+      }.property('isChecked'),
       lastComponent: function() {
         if (isLastComponent) {
-          this.set('enablePrimary',false);
+          this.set('isChecked', false);
           return true;
         } else {
-          this.set('enablePrimary',true);
+          this.set('isChecked', true);
           return false;
         }
       }.property(),
       lastComponentError:  Em.View.extend({
         template: Ember.Handlebars.compile(Em.I18n.t('hosts.host.deleteComponent.popup.warning').format(displayName))
       }),
+      restartNagiosMsg: Em.View.extend({
+        template: Ember.Handlebars.compile(Em.I18n.t('hosts.host.deleteComponent.popup.msg2').format(displayName))
+      }),
       deleteComponentMsg: function() {
-        return Em.I18n.t('hosts.host.deleteComponent.popup.msg').format(displayName);
+        return Em.I18n.t('hosts.host.deleteComponent.popup.msg1').format(displayName);
       }.property(),
       onPrimary: function () {
-        if (!this.get('enablePrimary')) return;
         self._doDeleteHostComponent(component);
         self.set('redrawComponents', true);
         this.hide();
@@ -309,10 +310,10 @@ App.MainHostDetailsController = Em.Controller.extend({
    * @param component  When <code>null</code> all components are stopped. 
    * @param context  Context under which this command is beign sent. 
    */
-  sendStopComponentCommand: function(component, context){
-    var url = component !== null ?
-        '/hosts/' + this.get('content.hostName') + '/host_components/' + component.get('componentName').toUpperCase() : 
-        '/hosts/' + this.get('content.hostName') + '/host_components?HostRoles/maintenance_state=OFF';
+  sendStopComponentCommand: function(components, context){
+    var url = Em.isArray(components) ?
+        '/hosts/' + this.get('content.hostName') + '/host_components' :
+        '/hosts/' + this.get('content.hostName') + '/host_components/' + components.get('componentName').toUpperCase();
     var dataToSend = {
       RequestInfo : {
         "context" : context
@@ -323,17 +324,8 @@ App.MainHostDetailsController = Em.Controller.extend({
         }
       }
     };
-    if (component === null) {
-      var allComponents = this.get('content.hostComponents');
-      var startable = [];
-      allComponents.forEach(function (c) {
-        if (c.get('passiveState') == 'OFF') {
-          if (c.get('isMaster') || c.get('isSlave')) {
-            startable.push(c.get('componentName'));
-          }
-        }
-      });
-      dataToSend.RequestInfo.query = "HostRoles/component_name.in(" + startable.join(',') + ")";
+    if (Em.isArray(components)) {
+      dataToSend.RequestInfo.query = "HostRoles/component_name.in(" + components.mapProperty('componentName').join(',') + ")";
     }
     this.sendCommandToServer( url, dataToSend, 'PUT',
       function(requestId){
@@ -344,18 +336,17 @@ App.MainHostDetailsController = Em.Controller.extend({
       console.log('Send request for STOPPING successfully');
 
       if (App.testMode) {
-        if(component === null){
-          var allComponents = this.get('content.hostComponents');
-          allComponents.forEach(function(component){
+        if(Em.isArray(components)){
+          components.forEach(function(component){
             component.set('workStatus', App.HostComponentStatus.stopping);
             setTimeout(function(){
               component.set('workStatus', App.HostComponentStatus.stopped);
             },App.testModeDelayForActions);
           });
         } else {
-          component.set('workStatus', App.HostComponentStatus.stopping);
+          components.set('workStatus', App.HostComponentStatus.stopping);
           setTimeout(function(){
-            component.set('workStatus', App.HostComponentStatus.stopped);
+            components.set('workStatus', App.HostComponentStatus.stopped);
           },App.testModeDelayForActions);
         }
 
@@ -413,14 +404,16 @@ App.MainHostDetailsController = Em.Controller.extend({
           dn += " ("+dns.join(", ")+")";
         }
         App.ModalPopup.show({
-          primary: Em.I18n.t('yes'),
-          secondary: Em.I18n.t('no'),
+          primary: Em.I18n.t('hosts.host.addComponent.popup.confirm'),
           header: Em.I18n.t('popup.confirmation.commonHeader'),
           addComponentMsg: function() {
             return Em.I18n.t('hosts.host.addComponent.msg').format(dn);
           }.property(),
           bodyClass: Ember.View.extend({
             templateName: require('templates/main/host/details/addComponentPopup')
+          }),
+          restartNagiosMsg : Em.View.extend({
+            template: Ember.Handlebars.compile(Em.I18n.t('hosts.host.addComponent.note').format(dn))
           }),
           onPrimary: function () {
             this.hide();
@@ -620,12 +613,14 @@ App.MainHostDetailsController = Em.Controller.extend({
     var displayName = component.get('displayName');
 
     App.ModalPopup.show({
-      primary: Em.I18n.t('yes'),
-      secondary: Em.I18n.t('no'),
+      primary: Em.I18n.t('hosts.host.installComponent.popup.confirm'),
       header: Em.I18n.t('popup.confirmation.commonHeader'),
       installComponentMessage: function(){
         return Em.I18n.t('hosts.host.installComponent.msg').format(displayName);
       }.property(),
+      restartNagiosMsg : Em.View.extend({
+        template: Ember.Handlebars.compile(Em.I18n.t('hosts.host.addComponent.note').format(displayName))
+      }),
       bodyClass: Ember.View.extend({
         templateName: require('templates/main/host/details/installComponentPopup')
       }),
@@ -1004,36 +999,36 @@ App.MainHostDetailsController = Em.Controller.extend({
 
   updateHost: function(data, opt, params) {
     this.set('content.passiveState', params.passive_state);
-    App.router.get('clusterController').loadUpdatedStatus(function(){});
-  },
+    App.router.get('clusterController').loadUpdatedStatus(function(){
+      batchUtils.infoPassiveState(params.passive_state);
+    });
+ },
 
   doStartAllComponents: function() {
     var self = this;
-    var components = this.get('content.hostComponents');
+    var components = this.get('serviceActiveComponents');
     var componentsLength = components == null ? 0 : components.get('length');
     if (componentsLength > 0) {
       App.showConfirmationPopup(function() {
-        self.sendStartComponentCommand(null, 
-            Em.I18n.t('hosts.host.maintainance.startAllComponents.context'));
+        self.sendStartComponentCommand(components, Em.I18n.t('hosts.host.maintainance.startAllComponents.context'));
       });
     }
   },
   
   doStopAllComponents: function() {
     var self = this;
-    var components = this.get('content.hostComponents');
+    var components = this.get('serviceActiveComponents');
     var componentsLength = components == null ? 0 : components.get('length');
     if (componentsLength > 0) {
       App.showConfirmationPopup(function() {
-        self.sendStopComponentCommand(null, 
-            Em.I18n.t('hosts.host.maintainance.stopAllComponents.context'));
+        self.sendStopComponentCommand(components, Em.I18n.t('hosts.host.maintainance.stopAllComponents.context'));
       });
     }
   },
 
   doRestartAllComponents: function() {
     var self = this;
-    var components = this.get('content.hostComponents').filterProperty('passiveState','OFF');
+    var components = this.get('serviceActiveComponents');
     var componentsLength = components == null ? 0 : components.get('length');
     if (componentsLength > 0) {
       App.showConfirmationPopup(function() {
@@ -1144,14 +1139,17 @@ App.MainHostDetailsController = Em.Controller.extend({
       }.property(),
       lastComponent: function() {
          if (lastComponents && lastComponents.length) {
-           this.set('enablePrimary',false);
+           this.set('isChecked', false);
            return true;
          } else {
-           this.set('enablePrimary',true);
+           this.set('isChecked', true);
            return false;
          }
       }.property(),
-      enablePrimary: false,
+      disablePrimary: function () {
+        return !this.get('isChecked');
+      }.property('isChecked'),
+      isChecked: false,
       lastComponentError:  Em.View.extend({
         template: Ember.Handlebars.compile(Em.I18n.t('hosts.delete.popup.body.msg4').format(lastComponents))
       }),
@@ -1165,7 +1163,6 @@ App.MainHostDetailsController = Em.Controller.extend({
         templateName: require('templates/main/host/details/doDeleteHostPopup')
       }),
       onPrimary: function() {
-        if (!this.get('enablePrimary')) return;
         self.set('fromDeleteHost', true);
         var allComponents = self.get('content.hostComponents');
         var deleteError = null;
@@ -1213,8 +1210,11 @@ App.MainHostDetailsController = Em.Controller.extend({
   },
 
   restartAllStaleConfigComponents: function() {
-    var staleComponents = this.get('content.componentsWithStaleConfigs');
-    batchUtils.restartHostComponents(staleComponents, Em.I18n.t('rollingrestart.context.allWithStaleConfigsOnSelectedHost').format(this.get('content.hostName')));
+    var self = this;
+    App.showConfirmationPopup(function () {
+      var staleComponents = self.get('content.componentsWithStaleConfigs');
+      batchUtils.restartHostComponents(staleComponents, Em.I18n.t('rollingrestart.context.allWithStaleConfigsOnSelectedHost').format(self.get('content.hostName')));
+    });
   },
 
   /**
@@ -1230,46 +1230,6 @@ App.MainHostDetailsController = Em.Controller.extend({
       reassignMasterController.setCurrentStep('1');
       App.router.transitionTo('reassign');
     });
-  },
-
-  turnOnOffPassiveConfirmation: function(event){
-    var self = this;
-    var component = event.context;
-    var state, onOff, message;
-    if (component.get("passiveState") == "ON") {
-      onOff = "Off";
-      state = "OFF";
-      message =  Em.I18n.t('passiveState.turnOffFor').format(component.get('displayName'));
-    } else {
-      onOff = "On";
-      state = "ON";
-      message = Em.I18n.t('passiveState.turnOnFor').format(component.get('displayName'));
-    }
-    App.showConfirmationPopup(function() {
-          self.turnOnOffPassive(state, component, message)
-        },
-        Em.I18n.t('hosts.passiveMode.popup').format(onOff,component.get('displayName'))
-    );
-  },
-
-  turnOnOffPassive: function(state,component,message) {
-    var hostName = this.get('content.hostName');
-    App.ajax.send({
-      name: 'host_component.passive',
-      sender: this,
-      data: {
-        component: component,
-        hostName: hostName,
-        componentName: component.get('componentName'),
-        passive_state: state,
-        requestInfo: message
-      },
-      success: 'updateComponentPassiveState'
-    });
-  },
-
-  updateComponentPassiveState: function(data, opt, params) {
-    params.component.set('passiveState',params.passive_state);
   },
 
   /**

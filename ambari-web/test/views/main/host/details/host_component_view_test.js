@@ -32,72 +32,6 @@ describe('App.HostComponentView', function() {
     });
   });
 
-  describe('#componentStatusTooltip', function() {
-
-    var tests = Em.A([
-      {
-        content: Em.Object.create({componentTextStatus: 'status', passiveState: 'ON'}),
-        m: 'ON state',
-        e: Em.I18n.t('hosts.component.passive.short.mode')
-      },
-      {
-        content: Em.Object.create({componentTextStatus: 'status', passiveState: 'IMPLIED'}),
-        m: 'IMPLIED state',
-        e: Em.I18n.t('hosts.component.passive.short.mode')
-      },
-      {
-        content: Em.Object.create({componentTextStatus: 'status', passiveState: 'OFF'}),
-        m: 'OFF state',
-        e: 'status'
-      }
-    ]);
-
-    tests.forEach(function(test) {
-      it(test.m, function() {
-        hostComponentView.set('content', test.content);
-        expect(hostComponentView.get('componentStatusTooltip')).to.equal(test.e);
-      });
-    });
-
-  });
-
-  describe('#passiveImpliedTextStatus', function() {
-
-    var tests = Em.A([
-      {
-        content: {service: {passiveState: 'ON'}},
-        parentView: {content: {passiveState: 'ON'}},
-        m: 'service in ON, host in ON',
-        e: Em.I18n.t('hosts.component.passive.implied.host.mode.tooltip')
-      },
-      {
-        content: {service: {passiveState: 'ON', serviceName:'SERVICE_NAME'}},
-        parentView: {content: {passiveState: 'OFF'}},
-        m: 'service in ON, host in OFF',
-        e: Em.I18n.t('hosts.component.passive.implied.service.mode.tooltip').format('SERVICE_NAME')
-      },
-      {
-        content: {service: {passiveState: 'OFF'}},
-        parentView: {content: {passiveState: 'OFF'}},
-        m: 'service in OFF, host in OFF',
-        e: ''
-      }
-    ]);
-
-    tests.forEach(function(test) {
-      it(test.m, function() {
-        hostComponentView = App.HostComponentView.create({
-          startBlinking: function(){},
-          doBlinking: function(){},
-          parentView: test.parentView,
-          content: test.content
-        });
-        expect(hostComponentView.get('passiveImpliedTextStatus')).to.equal(test.e);
-      });
-    });
-
-  });
-
   describe('#disabled', function() {
 
     var tests = Em.A([
@@ -126,15 +60,15 @@ describe('App.HostComponentView', function() {
 
   describe('#isUpgradeFailed', function() {
 
-    var tests = Em.A([
-      {workStatus: 'UPGRADE_FAILED', e: true},
-      {workStatus: 'OTHER_STATUS', e: false}
-    ]);
+    var tests = ['UPGRADE_FAILED'];
+    var testE = true;
+    var defaultE = false;
 
-    tests.forEach(function(test) {
-      it(test.workStatus, function() {
-        hostComponentView.set('content', {workStatus: test.workStatus});
-        expect(hostComponentView.get('isUpgradeFailed')).to.equal(test.e);
+    App.HostComponentStatus.getStatusesList().forEach(function(status) {
+      it(status, function() {
+        hostComponentView.set('content', {workStatus: status});
+        var e = tests.contains(status) ? testE : defaultE;
+        expect(hostComponentView.get('isUpgradeFailed')).to.equal(e);
       });
     });
 
@@ -142,15 +76,15 @@ describe('App.HostComponentView', function() {
 
   describe('#isInstallFailed', function() {
 
-    var tests = Em.A([
-      {workStatus: 'INSTALL_FAILED', e: true},
-      {workStatus: 'OTHER_STATUS', e: false}
-    ]);
+    var tests = ['INSTALL_FAILED'];
+    var testE = true;
+    var defaultE = false;
 
-    tests.forEach(function(test) {
-      it(test.workStatus, function() {
-        hostComponentView.set('content', {workStatus: test.workStatus});
-        expect(hostComponentView.get('isInstallFailed')).to.equal(test.e);
+    App.HostComponentStatus.getStatusesList().forEach(function(status) {
+      it(status, function() {
+        hostComponentView.set('content', {workStatus: status});
+        var e = tests.contains(status) ? testE : defaultE;
+        expect(hostComponentView.get('isInstallFailed')).to.equal(e);
       });
     });
 
@@ -158,16 +92,15 @@ describe('App.HostComponentView', function() {
 
   describe('#isStart', function() {
 
-    var tests = Em.A([
-      {workStatus: 'STARTED', e: true},
-      {workStatus: 'STARTING', e: true},
-      {workStatus: 'OTHER_STATUS', e: false}
-    ]);
+    var tests = ['STARTED','STARTING'];
+    var testE = true;
+    var defaultE = false;
 
-    tests.forEach(function(test) {
-      it(test.workStatus, function() {
-        hostComponentView.set('content', {workStatus: test.workStatus});
-        expect(hostComponentView.get('isStart')).to.equal(test.e);
+    App.HostComponentStatus.getStatusesList().forEach(function(status) {
+      it(status, function() {
+        hostComponentView.set('content', {workStatus: status});
+        var e = tests.contains(status) ? testE : defaultE;
+        expect(hostComponentView.get('isStart')).to.equal(e);
       });
     });
 
@@ -175,15 +108,15 @@ describe('App.HostComponentView', function() {
 
   describe('#isStop', function() {
 
-    var tests = Em.A([
-      {workStatus: 'INSTALLED', e: true},
-      {workStatus: 'OTHER_STATUS', e: false}
-    ]);
+    var tests = ['INSTALLED'];
+    var testE = true;
+    var defaultE = false;
 
-    tests.forEach(function(test) {
-      it(test.workStatus, function() {
-        hostComponentView.set('content', {workStatus: test.workStatus});
-        expect(hostComponentView.get('isStop')).to.equal(test.e);
+    App.HostComponentStatus.getStatusesList().forEach(function(status) {
+      it(status, function() {
+        hostComponentView.set('content', {workStatus: status});
+        var e = tests.contains(status) ? testE : defaultE;
+        expect(hostComponentView.get('isStop')).to.equal(e);
       });
     });
 
@@ -191,15 +124,31 @@ describe('App.HostComponentView', function() {
 
   describe('#isInstalling', function() {
 
-    var tests = Em.A([
-      {workStatus: 'INSTALLING', e: true},
-      {workStatus: 'OTHER_STATUS', e: false}
-    ]);
+    var tests = ['INSTALLING'];
+    var testE = true;
+    var defaultE = false;
 
-    tests.forEach(function(test) {
-      it(test.workStatus, function() {
-        hostComponentView.set('content', {workStatus: test.workStatus});
-        expect(hostComponentView.get('isInstalling')).to.equal(test.e);
+    App.HostComponentStatus.getStatusesList().forEach(function(status) {
+      it(status, function() {
+        hostComponentView.set('content', {workStatus: status});
+        var e = tests.contains(status) ? testE : defaultE;
+        expect(hostComponentView.get('isInstalling')).to.equal(e);
+      });
+    });
+
+  });
+
+  describe('#isInit', function() {
+
+    var tests = ['INIT'];
+    var testE = true;
+    var defaultE = false;
+
+    App.HostComponentStatus.getStatusesList().forEach(function(status) {
+      it(status, function() {
+        hostComponentView.set('content', {workStatus: status});
+        var e = tests.contains(status) ? testE : defaultE;
+        expect(hostComponentView.get('isInit')).to.equal(e);
       });
     });
 
@@ -207,18 +156,15 @@ describe('App.HostComponentView', function() {
 
   describe('#noActionAvailable', function() {
 
-    var tests = Em.A([
-      {workStatus: 'STARTING', e: 'hidden'},
-      {workStatus: 'STOPPING', e: 'hidden'},
-      {workStatus: 'UNKNOWN', e: 'hidden'},
-      {workStatus: 'DISABLED', e: 'hidden'},
-      {workStatus: 'OTHER_STATUS', e: ''}
-    ]);
+    var tests = ['STARTING', 'STOPPING', 'UNKNOWN', 'DISABLED'];
+    var testE = 'hidden';
+    var defaultE = '';
 
-    tests.forEach(function(test) {
-      it(test.workStatus, function() {
-        hostComponentView.set('content', {workStatus: test.workStatus});
-        expect(hostComponentView.get('noActionAvailable')).to.equal(test.e);
+    App.HostComponentStatus.getStatusesList().forEach(function(status) {
+      it(status, function() {
+        hostComponentView.set('content', {workStatus: status});
+        var e = tests.contains(status) ? testE : defaultE;
+        expect(hostComponentView.get('noActionAvailable')).to.equal(e);
       });
     });
 
@@ -286,15 +232,15 @@ describe('App.HostComponentView', function() {
 
   describe('#isRestartComponentDisabled', function() {
 
-    var tests = Em.A([
-      {workStatus: 'STARTED', e: false},
-      {workStatus: 'OTHER_STATUS', e: true}
-    ]);
+    var tests = ['STARTED'];
+    var testE = false;
+    var defaultE = true;
 
-    tests.forEach(function(test) {
-      it(test.workStatus, function() {
-        hostComponentView.set('content', {workStatus: test.workStatus});
-        expect(hostComponentView.get('isRestartComponentDisabled')).to.equal(test.e);
+    App.HostComponentStatus.getStatusesList().forEach(function(status) {
+      it(status, function() {
+        hostComponentView.set('content', {workStatus: status});
+        var e = tests.contains(status) ? testE : defaultE;
+        expect(hostComponentView.get('isRestartComponentDisabled')).to.equal(e);
       });
     });
 
@@ -302,18 +248,15 @@ describe('App.HostComponentView', function() {
 
   describe('#isDeleteComponentDisabled', function() {
 
-    var tests = Em.A([
-      {workStatus: 'INSTALLED', e: false},
-      {workStatus: 'UNKNOWN', e: false},
-      {workStatus: 'INSTALL_FAILED', e: false},
-      {workStatus: 'UPGRADE_FAILED', e: false},
-      {workStatus: 'OTHER_STATUS', e: true}
-    ]);
+    var tests = ['INSTALLED', 'UNKNOWN', 'INSTALL_FAILED', 'UPGRADE_FAILED', 'INIT'];
+    var testE = false;
+    var defaultE = true;
 
-    tests.forEach(function(test) {
-      it(test.workStatus, function() {
-        hostComponentView.set('content', {workStatus: test.workStatus});
-        expect(hostComponentView.get('isDeleteComponentDisabled')).to.equal(test.e);
+    App.HostComponentStatus.getStatusesList().forEach(function(status) {
+      it(status, function() {
+        hostComponentView.set('content', {workStatus: status});
+        var e = tests.contains(status) ? testE : defaultE;
+        expect(hostComponentView.get('isDeleteComponentDisabled')).to.equal(e);
       });
     });
 
@@ -396,11 +339,11 @@ describe('App.HostComponentView', function() {
       },
       {
         content: Em.Object.create({workStatus: 'STARTED', passiveState: 'ON'}),
-        e: 'icon-medkit'
+        e: 'health-status-started'
       },
       {
         content: Em.Object.create({workStatus: 'STARTED', passiveState: 'IMPLIED'}),
-        e: 'icon-medkit'
+        e: 'health-status-started'
       },
       {
         content: Em.Object.create({workStatus: 'STARTED', passiveState: 'OFF'}),
@@ -424,25 +367,15 @@ describe('App.HostComponentView', function() {
 
   describe('#isInProgress', function() {
 
-    var tests = Em.A([
-      {
-        workStatus: App.HostComponentStatus.stopping,
-        e: true
-      },
-      {
-        workStatus: App.HostComponentStatus.starting,
-        e: true
-      },
-      {
-        workStatus: 'other_status',
-        e: false
-      }
-    ]);
+    var tests = ['STOPPING', 'STARTING'];
+    var testE = true;
+    var defaultE = false;
 
-    tests.forEach(function(test) {
-      it(test.workStatus, function() {
-        hostComponentView.set('content', Em.Object.create({workStatus: test.workStatus}));
-        expect(hostComponentView.get('isInProgress')).to.equal(test.e);
+    App.HostComponentStatus.getStatusesList().forEach(function(status) {
+      it(status, function() {
+        hostComponentView.set('content', {workStatus: status});
+        var e = tests.contains(status) ? testE : defaultE;
+        expect(hostComponentView.get('isInProgress')).to.equal(e);
       });
     });
 
