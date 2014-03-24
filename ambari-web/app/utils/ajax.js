@@ -284,12 +284,25 @@ var urls = {
     }
   },
 
+  'config.cluster_configuration.put': {
+    'real': '/clusters/{cluster}',
+    'mock': '',
+    'format': function(data) {
+      return {
+        type: 'PUT',
+        async: false,
+        dataType: 'text',
+        data: data.data
+      }
+    }
+  },
+
   'config.advanced': {
     'real': '{stack2VersionUrl}/stackServices/{serviceName}/configurations?fields=*',
     'mock': '/data/wizard/stack/hdp/version{stackVersion}/{serviceName}.json',
-    'format': function() {
+    'format': function (data) {
       return {
-        async: false
+        async: !data.sync
       };
     }
   },
@@ -1130,7 +1143,7 @@ var urls = {
   'admin.stack_upgrade.run_upgrade': {
     'real': '/clusters/{clusterName}',
     'mock': '',
-    'format': function () {
+    'format': function (data) {
       return {
         type: 'PUT',
         async: false,
@@ -1141,7 +1154,7 @@ var urls = {
   'admin.stack_upgrade.stop_services': {
     'real': '/clusters/{clusterName}/services?ServiceInfo/state=STARTED',
     'mock': '',
-    'format': function () {
+    'format': function (data) {
       return {
         type: 'PUT',
         async: false,
@@ -1376,6 +1389,10 @@ var urls = {
       };
     }
   },
+  'ambari.service.load_server_version': {
+    'real': '/services/AMBARI/components/AMBARI_SERVER?fields=RootServiceComponents/component_version',
+    'mock': ''
+  },
   'ambari.service': {
     'real': '/services/AMBARI/components/AMBARI_SERVER',
     'mock': '/data/services/ambari_server.json'
@@ -1384,6 +1401,7 @@ var urls = {
     'real': '/services/AMBARI/components/AMBARI_SERVER?fields=RootServiceComponents/server_clock',
     'mock': ''
   },
+
   'config_groups.create': {
     'real': '/clusters/{clusterName}/config_groups',
     'mock': '',
@@ -1712,7 +1730,7 @@ var urls = {
     'apiPrefix': ''
   },
   'jobs.tezDag.tezDagId': {
-    'real': '/proxy?url=http://{historyServerHostName}:{ahsWebPort}/ws/v1/timeline/TEZ_DAG_ID/{tezDagId}?fields=relatedentities',
+    'real': '/proxy?url=http://{historyServerHostName}:{ahsWebPort}/ws/v1/timeline/TEZ_DAG_ID/{tezDagId}?fields=relatedentities,otherinfo',
     'mock': '/data/jobs/tezDag.json',
     'apiPrefix': ''
   },

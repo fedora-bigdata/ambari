@@ -45,8 +45,13 @@ App.MainHostDetailsController = Em.Controller.extend({
   },
 
   serviceActiveComponents: function() {
-    return this.get('content.hostComponents').filterProperty('service.isInPassive',true);
+    return this.get('content.hostComponents').filterProperty('service.isInPassive',false);
   }.property('content.hostComponents'),
+
+  serviceNonClientActiveComponents: function() {
+    return this.get('serviceActiveComponents').filterProperty('isClient',false);
+  }.property('serviceActiveComponents'),
+
 
   /**
    * Send specific command to server
@@ -666,12 +671,11 @@ App.MainHostDetailsController = Em.Controller.extend({
 
   /**
    * send command to server to run decommission on DATANODE, TASKTRACKER, NODEMANAGER, REGIONSERVER
-   * @param event
+   * @param component
    */
-  decommission: function(event){
+  decommission: function(component){
     var self = this;
     App.showConfirmationPopup(function(){
-      var component = event.context;
       var svcName = component.get('service.serviceName');
       var hostName = self.get('content.hostName');
       // HDFS service, decommission DataNode
@@ -702,12 +706,11 @@ App.MainHostDetailsController = Em.Controller.extend({
   
   /**
    * send command to server to run recommission on DATANODE, TASKTRACKER, NODEMANAGER
-   * @param event
+   * @param component
    */
-  recommission: function(event){
+  recommission: function(component){
     var self = this;
     App.showConfirmationPopup(function(){
-      var component = event.context;
       var svcName = component.get('service.serviceName');
       var hostName = self.get('content.hostName');
       // HDFS service, Recommission datanode
@@ -1006,7 +1009,7 @@ App.MainHostDetailsController = Em.Controller.extend({
 
   doStartAllComponents: function() {
     var self = this;
-    var components = this.get('serviceActiveComponents');
+    var components = this.get('serviceNonClientActiveComponents');
     var componentsLength = components == null ? 0 : components.get('length');
     if (componentsLength > 0) {
       App.showConfirmationPopup(function() {
@@ -1017,7 +1020,7 @@ App.MainHostDetailsController = Em.Controller.extend({
   
   doStopAllComponents: function() {
     var self = this;
-    var components = this.get('serviceActiveComponents');
+    var components = this.get('serviceNonClientActiveComponents');
     var componentsLength = components == null ? 0 : components.get('length');
     if (componentsLength > 0) {
       App.showConfirmationPopup(function() {
@@ -1047,6 +1050,7 @@ App.MainHostDetailsController = Em.Controller.extend({
     var stoppedStates = [App.HostComponentStatus.stopped,
                          App.HostComponentStatus.install_failed,
                          App.HostComponentStatus.upgrade_failed,
+                         App.HostComponentStatus.init,
                          App.HostComponentStatus.unknown];
     var masterComponents = [];
     var runningComponents = [];

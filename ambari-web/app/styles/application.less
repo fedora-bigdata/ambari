@@ -168,6 +168,12 @@ footer {
   }
 }
 
+#version-mismatch-title {
+  font-size: 18px;
+  font-weight: bold;
+  margin: 10px 0px 10px 0px;
+}
+
 #main-nav {
 
   li {
@@ -275,7 +281,7 @@ h1 {
 }
 
 .tooltip {
-  z-index: 1050;
+  z-index: 10000;
 }
 
 .tooltip-inner {
@@ -4263,6 +4269,32 @@ ul.filter {
       padding: 0 15px 0 0;
     }
   }
+  .dataset-instances {
+    .icon-play {
+      color: green;
+    }
+    .icon-ok {
+      color: green;
+    }
+    .icon-time {
+      color: orange;
+    }
+    .icon-exclamation-sign {
+      color: red;
+    }
+    .icon-remove {
+      color: red;
+    }
+    .icon-warning-sign {
+      color: red;
+    }
+    .icon-cog {
+      color: orange;
+    }
+    .icon-question-sign {
+      color: orange;
+    }
+  }
 }
 
 .mirroring-manage-clusters {
@@ -4272,22 +4304,21 @@ ul.filter {
     margin-bottom: 0;
   }
   .control-label-manage-clusters {
-    float: left;
-    width: 80px;
     padding-top: 5px;
   }
   .control-group {
-    margin-left: 15px;
+    padding: 0 15px;
+    box-sizing: border-box;
     margin-bottom: 10px;
   }
-  .category-title {
-    margin-bottom: 15px
+  .input-fluid {
+    width: 100%;
   }
-  .target-cluster-name {
-    margin-left: 40px
+  .category-title {
+    margin: 15px 0;
   }
   .target-cluster-form {
-    padding-left: 15px
+    padding-left: 15px;
   }
 }
 
@@ -5682,11 +5713,21 @@ i.icon-asterisks {
   #toggle-query {
     margin-left: 20px;
   }
-  .query-section {
-    margin-top: 1em;
+  .query-info{
+    display: none;
+    margin-top: 10px;
   }
-  .query-title {
-    font-weight: bold;
+  #job-more-details-table {
+    td {
+      vertical-align: top;
+    }
+    td:first-child {
+      font-weight: bold;
+      padding-right: 7px;
+    }
+    a {
+      cursor: pointer;
+    }
   }
   .sections {
     margin-top: 10px;
@@ -5715,16 +5756,13 @@ i.icon-asterisks {
     }
   }
   #tez-vertex-details-section-body {
-    table {
-      margin-bottom: 5px;
-    }
     td {
       border-top: none;
     }
     tr td:first-child {
       font-weight: bold;
       width: 20%;
-      overflow: scroll;
+      overflow: auto;
     }
     textarea {
       width: 95%;

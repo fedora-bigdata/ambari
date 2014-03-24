@@ -41,6 +41,7 @@ import random
 import pwd
 from ambari_server.resourceFilesKeeper import ResourceFilesKeeper, KeeperException
 import json
+from common_functions import OSCheck
 
 # debug settings
 VERBOSE = False
@@ -48,11 +49,12 @@ SILENT = False
 SERVER_START_DEBUG = False
 
 # OS info
-OS, OS_VERSION, _ = platform.linux_distribution() 
-OS = OS.lower().strip()
+OS_VERSION = OSCheck().get_os_major_version()
+OS = OSCheck().get_os_family()
 OS_UBUNTU = 'ubuntu'
 OS_FEDORA = 'fedora'
 OS_OPENSUSE = 'opensuse'
+OS_SUSE = 'suse'
 
 # action commands
 SETUP_ACTION = "setup"
@@ -1052,17 +1054,21 @@ def check_postgre_up():
         stdin=subprocess.PIPE,
         stderr=subprocess.PIPE
       )
-      time.sleep(20)
-      result = process.poll()
-      print_info_msg("Result of postgres start cmd: " + str(result))
-      if result is None:
-        process.kill()
-        pg_status = get_postgre_status()
-        if pg_status == PG_STATUS_RUNNING:
-          print_info_msg("Postgres process is running. Returning...")
-          return 0
+      if OS == OS_SUSE:
+        time.sleep(20)
+        result = process.poll()
+        print_info_msg("Result of postgres start cmd: " + str(result))
+        if result is None:
+          process.kill()
+          pg_status = get_postgre_status()
+        else:
+          retcode = result
       else:
-        retcode = result
+        out, err = process.communicate()
+        retcode = process.returncode
+      if pg_status == PG_STATUS_RUNNING:
+        print_info_msg("Postgres process is running. Returning...")
+        return 0
     except (Exception), e:
       pg_status = get_postgre_status()
       if pg_status == PG_STATUS_RUNNING:
@@ -1962,13 +1968,8 @@ def configure_os_settings():
     print_error_msg ("Non-Linux systems are not supported")
     return -1
 
-  os_info = platform.linux_distribution(
-    None, None, None, ['SuSE', 'redhat' ], 0
-  )
-  os_name = os_info[0].lower()
-  if os_name == 'suse':
-    os_name = 'sles'
-  os_version = os_info[1].split('.', 1)[0]
+  os_name = OSCheck().get_os_family()
+  os_version = OS_VERSION
   master_os_type = os_name + os_version    
   write_property(OS_TYPE_PROPERTY, master_os_type)
   return 0
@@ -2682,6 +2683,7 @@ def upgrade(args):
 
   retcode = run_schema_upgrade()
   if not retcode == 0:
+    print_error_msg("Ambari server upgrade failed. Please look at /var/log/ambari-server/ambari-server.log, for more details.")
     raise FatalException(11, 'Schema upgrade failed.')
 
   user = read_ambari_user()

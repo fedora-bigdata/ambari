@@ -20,7 +20,6 @@ var App = require('app');
 var stringUtils = require('utils/string_utils');
 
 var categotyConfigs = require('data/service_configs');
-var serviceComponents = {};
 var configGroupsByTag = [];
 
 App.config = Em.Object.create({
@@ -58,16 +57,20 @@ App.config = Em.Object.create({
    * Special characters in XML are defined at
    * http://en.wikipedia.org/wiki/List_of_XML_and_HTML_character_entity_references#Predefined_entities_in_XML
    */
-  escapeXMLCharacters: function(value) {
+  escapeXMLCharacters: function(value, toXML) {
     var self = this;
     // To prevent double/triple replacing '&gt;' to '&amp;gt;' to '&amp;amp;gt;', we need
     // to first unescape all XML chars, and then escape them again.
     var newValue = String(value).replace(/(&amp;|&lt;|&gt;|&quot;|&apos;)/g, function (s) {
       return self.xmlUnEscapeMap[s];
     });
-    return String(newValue).replace(/[&<>"']/g, function (s) {
-      return self.xmlEscapeMap[s];
-    });
+    if (toXML) {
+      return String(newValue).replace(/[&<>"']/g, function (s) {
+        return self.xmlEscapeMap[s];
+      });
+    } else {
+      return newValue;
+    }
   },
   preDefinedServiceConfigs: function () {
     var configs = this.get('preDefinedGlobalProperties');
@@ -511,7 +514,7 @@ App.config = Em.Object.create({
    * @param serviceName
    */
   addAdvancedConfigs: function (serviceConfigs, advancedConfigs, serviceName) {
-    var configsToVerifying = (serviceName) ? serviceConfigs.filterProperty('serviceName', serviceName) : serviceConfigs;
+    var configsToVerifying = (serviceName) ? serviceConfigs.filterProperty('serviceName', serviceName) : serviceConfigs.slice();
     advancedConfigs.forEach(function (_config) {
       var configCategory = 'Advanced';
       var categoryMetaData = null;
@@ -747,19 +750,20 @@ App.config = Em.Object.create({
    * @param serviceName
    * @return {*}
    */
-  loadAdvancedConfig: function (serviceName) {
+  loadAdvancedConfig: function (serviceName, callback, sync) {
     App.ajax.send({
       name: 'config.advanced',
       sender: this,
       data: {
         serviceName: serviceName,
         stack2VersionUrl: App.get('stack2VersionURL'),
-        stackVersion: App.get('currentStackVersionNumber')
+        stackVersion: App.get('currentStackVersionNumber'),
+        callback: callback,
+        sync: sync
       },
-      success: 'loadAdvancedConfigSuccess'
+      success: 'loadAdvancedConfigSuccess',
+      error: 'loadAdvancedConfigError'
     });
-    return serviceComponents[serviceName];
-    //TODO clean serviceComponents
   },
 
   loadAdvancedConfigSuccess: function (data, opt, params) {
@@ -789,8 +793,13 @@ App.config = Em.Object.create({
           });
         }
       }, this);
-      serviceComponents[data.items[0].StackConfigurations.service_name] = properties;
     }
+    params.callback(properties);
+  },
+
+  loadAdvancedConfigError: function (request, ajaxOptions, error, opt, params) {
+    console.log('ERROR: failed to load stack configs for', params.serviceName);
+    params.callback([]);
   },
 
   /**

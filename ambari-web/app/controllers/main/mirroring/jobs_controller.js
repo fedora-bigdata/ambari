@@ -26,7 +26,7 @@ App.MainDatasetJobsController = Em.Controller.extend({
       name: 'mirroring.suspend_entity',
       sender: this,
       data: {
-        name: this.get('content.name'),
+        name: this.get('content.prefixedName'),
         type: 'feed',
         falconServer: App.get('falconServerURL')
       },
@@ -45,7 +45,7 @@ App.MainDatasetJobsController = Em.Controller.extend({
       name: 'mirroring.schedule_entity',
       sender: this,
       data: {
-        name: this.get('content.name'),
+        name: this.get('content.prefixedName'),
         type: 'feed',
         falconServer: App.get('falconServerURL')
       },
@@ -67,7 +67,7 @@ App.MainDatasetJobsController = Em.Controller.extend({
         name: 'mirroring.delete_entity',
         sender: self,
         data: {
-          name: self.get('content.name'),
+          name: self.get('content.prefixedName'),
           type: 'feed',
           falconServer: App.get('falconServerURL')
         },
@@ -90,7 +90,7 @@ App.MainDatasetJobsController = Em.Controller.extend({
       name: 'mirroring.suspend_instance',
       sender: this,
       data: {
-        feed: this.get('content.name'),
+        feed: this.get('content.prefixedName'),
         name: event.context.get('name'),
         job: event.context,
         falconServer: App.get('falconServerURL')
@@ -109,7 +109,7 @@ App.MainDatasetJobsController = Em.Controller.extend({
       name: 'mirroring.resume_instance',
       sender: this,
       data: {
-        feed: this.get('content.name'),
+        feed: this.get('content.prefixedName'),
         name: event.context.get('name'),
         job: event.context,
         falconServer: App.get('falconServerURL')
@@ -128,7 +128,7 @@ App.MainDatasetJobsController = Em.Controller.extend({
       name: 'mirroring.kill_instance',
       sender: this,
       data: {
-        feed: this.get('content.name'),
+        feed: this.get('content.prefixedName'),
         name: event.context.get('name'),
         job: event.context,
         falconServer: App.get('falconServerURL')
@@ -163,7 +163,7 @@ App.MainDatasetJobsController = Em.Controller.extend({
   openInfoInNewTab: function (xml) {
     var newWindow = window.open('');
     var newDocument = newWindow.document;
-    newDocument.write('<pre>' + App.config.escapeXMLCharacters(xml) + '</pre>');
+    newDocument.write('<pre>' + App.config.escapeXMLCharacters(xml, true) + '</pre>');
     newWindow.focus();
   },
 

@@ -30,6 +30,8 @@ App.MainHiveJobDetailsView = Em.View.extend({
   zoomScaleFrom : 1,
   zoomScaleTo: 2,
   zoomScale : 1,
+  showQuery : false,
+
   zoomStep : function() {
     var zoomStep = 0.01;
     var zoomFrom = this.get('zoomScaleFrom');
@@ -41,10 +43,16 @@ App.MainHiveJobDetailsView = Em.View.extend({
   }.property('zoomScaleFrom', 'zoomScaleTo'),
   isGraphMaximized: false,
 
-  showQuery : false,
   toggleShowQuery : function () {
     this.toggleProperty('showQuery');
+    var queryBlock =  $('.query-info');
+    if (this.get('showQuery')) {
+      queryBlock.slideDown();
+    } else {
+      queryBlock.slideUp();
+    };
   },
+
   toggleShowQueryText : function () {
     return this.get('showQuery') ? Em.I18n.t('jobs.hive.less') : Em.I18n.t('jobs.hive.more');
   }.property('showQuery'),
@@ -84,6 +92,29 @@ App.MainHiveJobDetailsView = Em.View.extend({
       this.set('content', this.get('controller.content'));
     }
   }.observes('controller.loaded'),
+
+  yarnApplicationIdLink : function() {
+    var yarnService = App.YARNService.find().objectAt(0);
+    var appId = this.get('content.tezDag.yarnApplicationId');
+    if (yarnService != null) {
+      var quickLinksView = App.QuickViewLinks.create();
+      try {
+        quickLinksView.set('content', yarnService);
+        quickLinksView.setQuickLinks();
+        var links = quickLinksView.get('quickLinks');
+        if (links && links.length > 0) {
+          var rmUILink = links.findProperty('label', 'ResourceManager UI');
+          if (rmUILink != null) {
+            return rmUILink.get('url') + '/cluster/app/' + appId;
+          }
+        }
+      } finally {
+        quickLinksView.destroy();
+        quickLinksView = null;
+      }
+    }
+    return null;
+  }.property('content.tezDag.yarnApplicationId', 'App.YARNService.resourceManagerNode.hostName'),
 
   jobObserver : function() {
     var content = this.get('content');
@@ -217,8 +248,8 @@ App.MainHiveJobDetailsView = Em.View.extend({
         read : v.get('recordReadCount') == null ? null : Em.I18n.t('jobs.hive.tez.records.count').format(v.get('recordReadCount')),
         write : v.get('recordWriteCount') == null ? null : Em.I18n.t('jobs.hive.tez.records.count').format(v.get('recordWriteCount'))
       },
-      started: v.get('startTime') ? dateUtils.dateFormat(v.get('startTime'), true) : '',
-      ended: v.get('endTime') ? dateUtils.dateFormat(v.get('endTime'), true) : '',
+      started: v.get('startTime') ? dateUtils.dateFormat(v.get('startTime'), true, true) : '',
+      ended: v.get('endTime') ? dateUtils.dateFormat(v.get('endTime'), true, true) : '',
       status: status
     };
   }.property('selectedVertex.fileReadOps', 'selectedVertex.fileWriteOps', 'selectedVertex.hdfsReadOps', 'selectedVertex.hdfdWriteOps',
@@ -277,7 +308,7 @@ App.MainHiveJobDetailsVerticesTableView = App.TableView.extend({
 
   didInsertElement: function () {
     if(!this.get('controller.sortingColumn')){
-      var columns = this.get('childViews')[0].get('childViews')
+      var columns = this.get('childViews')[0].get('childViews');
       if(columns && columns.findProperty('name', 'name')){
         columns.findProperty('name','name').set('status', 'sorting_asc');
         this.get('controller').set('sortingColumn', columns.findProperty('name','name'))
@@ -299,19 +330,19 @@ App.MainHiveJobDetailsVerticesTableView = App.TableView.extend({
   }),
   inputSort: sort.fieldView.extend({
     column: 2,
-    name: 'totalReadBytesDisplay',
+    name: 'totalReadBytes',
     displayName: Em.I18n.t('apps.item.dag.input'),
     type: 'number'
   }),
   outputSort: sort.fieldView.extend({
     column: 3,
-    name: 'totalWriteBytesDisplay',
+    name: 'totalWriteBytes',
     displayName: Em.I18n.t('apps.item.dag.output'),
     type: 'number'
   }),
   durationSort: sort.fieldView.extend({
     column: 4,
-    name: 'durationDisplay',
+    name: 'duration',
     displayName: Em.I18n.t('apps.item.dag.duration'),
     type: 'number'
   })

@@ -24,6 +24,14 @@ Em.I18n.translations = {
   'app.reloadPopup.header': 'Reload Page',
 
   'app.loadingPlaceholder': 'Loading...',
+  'app.versionMismatchAlert.title': 'Ambari Server / Web Client Version Mismatch',
+  'app.versionMismatchAlert.body': 'Ambari Server and Web Client versions do not match:<br> ' +
+    '<br>Ambari Server: <strong>{0}</strong>' +
+    '<br>Ambari Web Client: <strong>{1}</strong><br>' +
+    '<br>This typically happens after upgrading Ambari due to Ambari Web Client code cached in the browser.' +
+    '<br>Perform hard refresh to see if this message disappears.' +
+    '<br>If you keep seeing this message, clear the browser cache completely and hit this URL again.' +
+    '<br>You must resolve this error in order to continue.',
   'app.signout':'Sign out',
   'app.settings':'Settings',
   'app.aboutAmbari':'About',
@@ -1542,6 +1550,7 @@ Em.I18n.translations = {
   'hosts.host.alerts.st':'&nbsp;!&nbsp;',
   'hosts.decommission.popup.body':'Are you sure?',
   'hosts.decommission.popup.header':'Confirmation',
+  'hosts.decommission.tooltip.warning':'Cannot {0} since {1} is not running',
   'hosts.delete.popup.body':'Are you sure you want to delete host <i>{0}</i>?',
   'hosts.delete.popup.body.msg1':'By removing this host, Ambari will ignore future communications from this host. Software packages will not be removed from the host. The components on the host should not be restarted. If you wish to readd this host to the cluster, be sure to clean the host.',
   'hosts.delete.popup.body.msg2':'After deleting this host, Nagios should be restarted to remove this host from Nagios monitoring. Go to the <i>Services</i> page to restart Nagios.',
@@ -1722,7 +1731,7 @@ Em.I18n.translations = {
   'dashboard.services.yarn.apps': 'Applications',
   'dashboard.services.yarn.apps.msg': '{0} submitted / {1} running / {2} pending / {3} completed / {4} killed / {5} failed',
   'dashboard.services.yarn.memory': 'Cluster Memory',
-  'dashboard.services.yarn.memory.msg': '{0} used / {1} reserved / {2} total',
+  'dashboard.services.yarn.memory.msg': '{0} used / {1} reserved / {2} available',
   'dashboard.services.yarn.queues': 'Queues',
   'dashboard.services.yarn.queues.msg': '{0} Queues',
 
@@ -1894,6 +1903,11 @@ Em.I18n.translations = {
   'mirroring.manageClusters.error' :'Error in saving changes',
   'mirroring.manageClusters.create.cluster.popup' :'Create Target Cluster',
   'mirroring.manageClusters.remove.confirmation' :'Are you sure you want to delete the target cluster {0}?',
+  'mirroring.manageClusters.executeTooltip' :'The "execute" interface specifies the endpoint for ResourceManager.<br>Example: resourcemanager-host:8050',
+  'mirroring.manageClusters.readonlyTooltip' :'The "readonly" interface specifies the endpoint for Hadoop\'s HFTP protocol.<br>Example: hftp://namenode-host:50070',
+  'mirroring.manageClusters.workflowTooltip' :'The "workflow" interface specifies the endpoint for Oozie URL.<br>Example: http://oozie-host:11000/oozie',
+  'mirroring.manageClusters.writeTooltip' :'The "write" interface is the endpoint to write to HDFS. Set this to the value of fs.defaultFS (in core-site.xml) of the target cluster.<br>Example:<br>hdfs://namenode-host:8020 (non-HA); hdfs://nameservice-id:8020 (HA)',
+  'mirroring.manageClusters.locationsMessage' :'Specify the following for the target cluster, not the source cluster.',
 
   'mirroring.table.noDatasets':'No datasets to display',
   'mirroring.table.datasetStatus':'Status',
@@ -1960,8 +1974,9 @@ Em.I18n.translations = {
   'jobs.customDateFilter.endTime':'End Time',
   'jobs.hive.more':'show more',
   'jobs.hive.less':'show less',
-  'jobs.hive.query':'Hive Query:',
-  'jobs.hive.stages':'Stages:',
+  'jobs.hive.query':'Hive Query',
+  'jobs.hive.stages':'Stages',
+  'jobs.hive.yarnApplication':'YARN&nbsp;Application',
   'jobs.hive.tez.tasks':'Tez Tasks',
   'jobs.hive.tez.hdfs':'HDFS',
   'jobs.hive.tez.localFiles':'Local Files',

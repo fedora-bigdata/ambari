@@ -135,7 +135,7 @@ class SSH:
 class Bootstrap(threading.Thread):
   """ Bootstrap the agent on a separate host"""
   TEMP_FOLDER = "/tmp"
-  OS_CHECK_SCRIPT_FILENAME = "os_type_check.sh"
+  OS_CHECK_SCRIPT_FILENAME = "os_check.py"
   AMBARI_REPO_FILENAME = "ambari.repo"
   SETUP_SCRIPT_FILENAME = "setupAgent.py"
   PASSWORD_FILENAME = "host_pass"
@@ -422,7 +422,11 @@ class Bootstrap(threading.Thread):
   def try_to_execute(self, action):
     last_retcode = {"exitstatus": 177, "log":"Try to execute '{0}'".format(str(action)), "errormsg":"Execute of '{0}' failed".format(str(action))}
     try:
-      last_retcode = action()
+      retcode = action()
+      if isinstance(retcode, int):
+        last_retcode["exitstatus"] = retcode
+      else:
+        last_retcode = retcode
     except Exception, e:
       self.host_log.write("Traceback: " + traceback.format_exc())
     return last_retcode

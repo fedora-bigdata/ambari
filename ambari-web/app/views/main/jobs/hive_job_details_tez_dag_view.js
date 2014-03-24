@@ -292,6 +292,25 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
       'content.tezDag.vertices.@each.recordReadCount', 'content.tezDag.vertices.@each.recordWriteCount',
       'content.tezDag.vertices.@each.state', 'content.tezDag.vertices.@each.spilledRecords'),
 
+  createOperationPlanObj: function (vertexName, op) {
+    var operatorPlanObj = [];
+    var text = this.get('content.tezDag.vertices').findProperty('name', vertexName).get('operationPlan');
+    text = text.replace(/:"/g,'"');
+    var jsonText =  $.parseJSON(text);
+    var jsonText = op.findIn(jsonText);
+    for (var key in jsonText) {
+      if (jsonText.hasOwnProperty(key) && typeof(jsonText[key]) == "string") {
+        operatorPlanObj.push(
+          {
+            name: key,
+            value: jsonText[key]
+          }
+        );
+      }
+    }
+    return operatorPlanObj;
+  },
+
   /**
    * Determines layout and creates Tez graph. In the process it populates the
    * visual model into 'dagVisualModel' field.
@@ -300,6 +319,7 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
    * visual (d3) terms.
    */
   drawTezDag : function() {
+    var self = this;
     var width = this.get('svgWidth');
     var svgLayer = this.get('svgVerticesLayer');
     var vertices = this.get('content.tezDag.vertices');
@@ -309,6 +329,7 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
     var depthToNodes = []; // Array of id arrays
     var dagVisualModel = this.get('dagVisualModel');
     var selectedVertex = this.get('selectedVertex');
+    var minVertexDuration = Number.MAX_VALUE;
 
     //
     // CALCULATE DEPTH - BFS to get correct graph depth
@@ -362,7 +383,11 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
             recordsRead : -1,
             recordsWrite : -1,
             tezTasks : -1
-          }
+          },
+          duration: vertex.get('duration')
+        }
+        if (node.duration < minVertexDuration && node.duration > 0) {
+          minVertexDuration = node.duration;
         }
         vertexIdToNode[vertex.get('id')] = node;
         depthToNodes[node.depth].push(node);
@@ -478,7 +503,10 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
       var maxNodeHeight = 0;
       for ( var nodeIndex = 0; nodeIndex < nodes.length; nodeIndex++) {
         var node = nodes[nodeIndex];
-        var nodeDim = this.getNodeCalculatedDimensions(node);
+        var nodeDim = this.getNodeCalculatedDimensions(node, minVertexDuration);
+        node.drawWidth = nodeDim.drawWidth;
+        node.drawHeight = nodeDim.drawHeight;
+        node.scale = nodeDim.scale;
         node.width = nodeDim.width;
         node.height = nodeDim.height;
         if (maxNodeHeight < node.height) {
@@ -496,7 +524,8 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
           // fraction of parentage
           var childrenWidth = 0;
           node.children.forEach(function(child) {
-            childrenWidth += ((node.width + xGap) / child.parents.length);
+            var childDim = self.getNodeCalculatedDimensions(child, minVertexDuration);
+            childrenWidth += ((childDim.width + xGap) / child.parents.length);
           });
           updateNodeEffectiveWidth(node, Math.max(childrenWidth, (node.width+xGap)));
         } else {
@@ -564,7 +593,6 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
     //
     // Draw SVG
     //
-    var self = this;
     var force = d3.layout.force().nodes(dagVisualModel.nodes).links(dagVisualModel.links).start();
     var nodeDragData = {
       nodeRelativeX : 0,
@@ -573,8 +601,8 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
     var nodeDrag = d3.behavior.drag().on('dragstart', function(node){
       d3.event.sourceEvent.stopPropagation();
       var rc = d3.mouse(this);
-      nodeDragData.nodeRelativeX = rc[0];
-      nodeDragData.nodeRelativeY = rc[1];
+      nodeDragData.nodeRelativeX = (rc[0] * node.scale);
+      nodeDragData.nodeRelativeY = (rc[1] * node.scale);
     }).on('drag', function(node){
       var nx = d3.event.x - nodeDragData.nodeRelativeX;
       var ny = d3.event.y - nodeDragData.nodeRelativeY;
@@ -611,9 +639,9 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
     // Create Nodes
     var node = svgLayer.selectAll(".node").data(dagVisualModel.nodes).enter().append("g").attr("class", "node").call(nodeDrag);
     node.append("rect").attr("class", "background").attr("width", function(n) {
-      return n.width;
+      return n.drawWidth;
     }).attr("height", function(n) {
-      return n.height;
+      return n.drawHeight;
     }).attr("rx", "10").attr("filter", "url(#shadow)").on('mousedown', function(n) {
       var vertex = App.TezDagVertex.find(n.id);
       if (vertex != null) {
@@ -637,62 +665,18 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
             opCount[op] = opCount[op]+1;
           }
           return opCount[op];
-        }).on('mousedown', function(op) {
-          var opIndex = this.getAttribute ? this.getAttribute("opIndex") : null;
-          if (numberUtils.validateInteger(opIndex) == null) {
-            console.log("Clicked on operator: ", op, " [", opIndex, "]");
-            var textArea = document.getElementById('tez-vertex-operator-plan-textarea');
-            if (textArea && textArea.value) {
-              var text = textArea.value;
-              var opText = "\"" + op + "\"";
-              var count = 1;
-              var index = text.indexOf(opText);
-              while (index > -1 && count < opIndex) {
-                index = text.indexOf(opText, index + 1);
-                count++;
-              }
-              if (index > -1) {
-                var start = index;
-                var end = index;
-                var matchCount = 0;
-                var splits = text.substring(start).split(/({|})/);
-                splits.every(function(s) {
-                  if (s == '{') {
-                    matchCount++;
-                  } else if (s == '}') {
-                    matchCount--;
-                    if (matchCount == 0) {
-                      end += s.length;
-                      return false;
-                    }
-                  }
-                  end += s.length;
-                  return true;
-                });
-                textArea.setSelectionRange(start, end);
-                // Now scroll to the selection
-                var lines = 0;
-                var totalLines = 0;
-                var index = text.indexOf("\n");
-                while (index > 0) {
-                  index = text.indexOf("\n", index + 1);
-                  if (index < start) {
-                    lines++;
-                  }
-                  totalLines++;
-                }
-                console.log("Selection is from row ", lines, " out of ", totalLines);
-                lines -= 5;
-                var lineHeight = Math.floor(textArea.scrollHeight / totalLines);
-                var scrollHeight = Math.round(lines * lineHeight);
-                textArea.scrollTop = scrollHeight;
-              }
-            }
-          }
-        });
-        opGroups.append("rect").attr("class", "operation svg-tooltip ").attr("width", "50").attr("height", "16").attr("title", function(op) {
-          return op;
-        });
+        }).on('mouseover', function(op) {
+          var viewContent = {
+            operationName: op,
+            operatorPlanObj: []
+          };
+          var operatorPlanObj = self.createOperationPlanObj(n.name, op);
+          viewContent.operatorPlanObj = operatorPlanObj;
+          var template = App.HoverOpTable.create({content: viewContent}) ;
+          $(this).find('.svg-tooltip').attr('title', template.renderToBuffer().string()).tooltip('fixTitle').tooltip('show');
+          })
+
+        opGroups.append("rect").attr("class", "operation svg-tooltip ").attr("width", "50").attr("height", "16");
         opGroups.append("text").attr("x", "2").attr("dy", "1em").text(function(op) {
           return op != null ? op.split(' ')[0] : '';
         });
@@ -718,9 +702,33 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
     iconContainer.append('rect').attr('width', '1em').attr('height', '1em').attr('class', 'vertex-icon-rect  svg-tooltip ');
     iconContainer.append('text').attr('dy', '10px').attr("font-family", "FontAwesome").attr('class', 'vertex-icon-text');
     node.attr("transform", function(d) {
-      return "translate(" + d.x + "," + d.y + ")";
+      return "translate(" + d.x + "," + d.y + ") scale("+d.scale+") ";
     });
     this.vertexMetricsUpdated();
+    $('.svg-tooltip').each(function() {
+      var item = $(this);
+      if (item.prop('tagName') == 'path') {
+        item.hover(function(e) {
+          var offset = $(this).offset();
+          item.prop('offsetWidth', function() {
+            return 2 * (e.pageX - offset.left);
+          });
+          item.prop('offsetHeight', function() {
+            return 2 * (e.pageY - offset.top);
+          });
+        });
+      };
+      if (item.prop('offsetWidth') == undefined) {
+        item.prop('offsetWidth', function() {
+          return item.width();
+        });
+      };
+      if (item.prop('offsetHeight') == undefined) {
+        item.prop('offsetHeight', function() {
+          return item.height();
+        });
+      };
+    });
     $('.svg-tooltip').tooltip({
       placement : 'left'
     });
@@ -758,7 +766,7 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
     node.incomingY = newPosition[1];
     node.outgoingX = newPosition[0] + (node.width/2);
     node.outgoingY = newPosition[1] + node.height;
-    d3Vertex.attr('transform', 'translate(' + newPosition[0] + ',' + newPosition[1] + ')');
+    d3Vertex.attr('transform', 'translate(' + newPosition[0] + ',' + newPosition[1] + ') scale('+node.scale+') ');
     // Move links
     d3.selectAll('.link').filter(function(l) {
       if (l && (l.source === node || l.target === node)) {
@@ -869,21 +877,44 @@ App.MainHiveJobDetailsTezDagView = Em.View.extend({
   },
 
   /**
-   * Determines the node width and height in pixels.
+   * Determines the size of a node by taking into account its duration and
+   * number of operations performed.
    *
-   * Takes into account the various contents of the a node. { width: 200,
-   * height: 60 }
+   * @return {Object} Provides various metrics necessary in drawing a node.
+   * <code>
+   * {
+   *  width: 360, // Scaled width of the node
+   *  height: 80, // Scaled height of the node
+   *  scale: 2, // Scale used on vertex dimensions. Quickest vertex is scaled to 1.
+   *  drawWidth: 180, // Width of actual drawing (that will be scaled)
+   *  drawHeight: 40 // Height of actual drawing (that will be scaled)
+   * }
+   * </code>
    */
-  getNodeCalculatedDimensions : function(node) {
+  getNodeCalculatedDimensions : function(node, minVertexDuration) {
     var size = {
       width : 180,
-      height : 40
+      height : 40,
+      drawWidth : 180,
+      drawHeight : 40,
+      scale : 1
     }
     if (node.operations && node.operations.length > 0) {
       var opsHeight = Math.ceil(node.operations.length / 3);
-      size.height += (opsHeight * 20);
+      size.drawHeight += (opsHeight * 20);
     }
+    size.scale = (minVertexDuration < Number.MAX_VALUE && node.duration > 0) ? (node.duration / minVertexDuration) : 1;
+    if (size.scale < 1) {
+      size.scale = 1;
+    }
+    size.scale = Math.sqrt(size.scale);
+    size.width = size.drawWidth * size.scale;
+    size.height = size.drawHeight * size.scale;
     return size;
   }
 
+});
+
+App.HoverOpTable = Ember.View.extend({
+  templateName : require('templates/main/jobs/hover_op_table')
 });

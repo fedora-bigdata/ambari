@@ -41,6 +41,8 @@ kinit_path_local = functions.get_kinit_path([default("kinit_path_local",None), "
 rm_host = config['clusterHostInfo']['rm_host'][0]
 rm_port = config['configurations']['yarn-site']['yarn.resourcemanager.webapp.address'].split(':')[-1]
 rm_https_port = "8090"
+# TODO UPGRADE default, update site during upgrade
+rm_nodes_exclude_path = default("/configurations/yarn-site/yarn.resourcemanager.nodes.exclude-path","/etc/hadoop/conf/yarn.exclude")
 
 java64_home = config['hostLevelParams']['java_home']
 hadoop_ssl_enabled = default("/configurations/core-site/hadoop.ssl.enabled", False)
@@ -51,7 +53,6 @@ yarn_heapsize = config['configurations']['global']['yarn_heapsize']
 resourcemanager_heapsize = config['configurations']['global']['resourcemanager_heapsize']
 nodemanager_heapsize = config['configurations']['global']['nodemanager_heapsize']
 apptimelineserver_heapsize = default("/configurations/global/apptimelineserver_heapsize", 1024)
-
 yarn_log_dir_prefix = config['configurations']['global']['yarn_log_dir_prefix']
 yarn_pid_dir_prefix = status_params.yarn_pid_dir_prefix
 mapred_pid_dir_prefix = status_params.mapred_pid_dir_prefix

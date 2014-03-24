@@ -691,16 +691,23 @@ App.WizardController = Em.Controller.extend({
   /**
    * load advanced configs from server
    */
-  loadAdvancedConfigs: function () {
-    var configs = (this.getDBProperty('advancedServiceConfig')) ? this.getDBProperty('advancedServiceConfig') : [];
-    this.get('content.services').filterProperty('isSelected', true).mapProperty('serviceName').forEach(function (_serviceName) {
-      var serviceComponents = App.config.loadAdvancedConfig(_serviceName);
-      if (serviceComponents) {
-        configs = configs.concat(serviceComponents);
-      }
+  loadAdvancedConfigs: function (dependentController) {
+    var self = this;
+    var counter = this.get('content.services').filterProperty('isSelected').length;
+    var loadAdvancedConfigResult = [];
+    dependentController.set('isAdvancedConfigLoaded', false);
+    this.get('content.services').filterProperty('isSelected').mapProperty('serviceName').forEach(function (_serviceName) {
+      App.config.loadAdvancedConfig(_serviceName, function (properties) {
+        loadAdvancedConfigResult.pushObjects(properties);
+        counter--;
+        //pass configs to controller after last call is completed
+        if (counter === 0) {
+          self.set('content.advancedServiceConfig', loadAdvancedConfigResult);
+          self.setDBProperty('advancedServiceConfig', loadAdvancedConfigResult);
+          dependentController.set('isAdvancedConfigLoaded', true);
+        }
+      });
     }, this);
-    this.set('content.advancedServiceConfig', configs);
-    this.setDBProperty('advancedServiceConfig', configs);
   },
   /**
    * Load serviceConfigProperties to model
@@ -748,6 +755,13 @@ App.WizardController = Em.Controller.extend({
         // if modified configs detected push all service's configs for update
         if (configs.length)
           updateServiceConfigProperties = updateServiceConfigProperties.concat(serviceConfigProperties.filterProperty('serviceName',_content.get('serviceName')));
+        // watch for properties that are not modified but have to be updated
+        if (_content.get('configs').someProperty('forceUpdate')) {
+          // check for already added modified properties
+          if (!updateServiceConfigProperties.findProperty('serviceName', _content.get('serviceName'))) {
+            updateServiceConfigProperties = updateServiceConfigProperties.concat(serviceConfigProperties.filterProperty('serviceName',_content.get('serviceName')));
+          }
+        }
       }
     }, this);
     this.setDBProperty('serviceConfigProperties', serviceConfigProperties);

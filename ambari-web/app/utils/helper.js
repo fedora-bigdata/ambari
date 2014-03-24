@@ -36,6 +36,36 @@ String.prototype.capitalize = function () {
   return this.charAt(0).toUpperCase() + this.slice(1);
 };
 
+// Use: stringvalue.findIn(multi_dimensional_array_or_object)
+/***Example:
+ var tofind = 'emotion';
+ var person = {'name': 'Bob Loblaw', 'age': '28', 'personality': {'smart': 'yes', 'funny': 'yes', 'emotion': 'happy'} };
+ tofind.findIn(person)
+ ***/
+String.prototype.findIn = function (multi) {
+  multi = multi || '';
+  var val = this.valueOf();
+  if(typeof multi == 'object' || typeof multi == 'array')
+  {
+    if(val in multi)
+    {
+      return multi[val];
+    }
+    else
+    {
+      for(var x in multi)
+      {
+        var found = this.findIn(multi[x]);
+        if(found != false)
+        {
+          return found;
+        }
+      }
+    }
+  }
+  return false;
+};
+
 /**
  * Replace {i} with argument. where i is number of argument to replace with
  * @return {String}
@@ -209,7 +239,6 @@ App.format = {
     'KERBEROS_ADMIN_CLIENT': 'Kerberos Admin Client',
     'KERBEROS_CLIENT': 'Kerberos Client',
     'KERBEROS_SERVER': 'Kerberos Server',
-    'LOGVIEWER_SERVER': 'Logviewer Server',
     'MAPREDUCE2_CLIENT': 'MapReduce2 Client',
     'MAPREDUCE2_SERVICE_CHECK': 'MapReduce2 Service Check',
     'MAPREDUCE_CLIENT': 'MapReduce Client',

@@ -24,6 +24,11 @@ App.MainMirroringManageClustersController = Em.ArrayController.extend({
   // link to popup object
   popup: null,
 
+  executeTooltip: Em.I18n.t('mirroring.manageClusters.executeTooltip'),
+  readonlyTooltip: Em.I18n.t('mirroring.manageClusters.readonlyTooltip'),
+  workflowTooltip: Em.I18n.t('mirroring.manageClusters.workflowTooltip'),
+  writeTooltip: Em.I18n.t('mirroring.manageClusters.writeTooltip'),
+
   clusters: [],
 
   newCluster: null,
@@ -87,8 +92,8 @@ App.MainMirroringManageClustersController = Em.ArrayController.extend({
           workflow: '',
           write: '',
           readonly: '',
-          staging: '/apps/falcon/' + clusterName + '/staging',
-          working: '/apps/falcon/' + clusterName + '/working',
+          staging: '/apps/falcon/<cluster-name>/staging',
+          working: '/apps/falcon/<cluster-name>/working',
           temp: '/tmp'
         });
         self.set('newCluster', newCluster);
@@ -114,7 +119,7 @@ App.MainMirroringManageClustersController = Em.ArrayController.extend({
           falconServer: App.get('falconServerURL')
         },
         success: 'onRemoveClusterSuccess',
-        error: 'onRemoveClusterError'
+        error: 'onError'
       });
     }, Em.I18n.t('mirroring.manageClusters.remove.confirmation').format(selectedClusterName));
   },
@@ -123,8 +128,13 @@ App.MainMirroringManageClustersController = Em.ArrayController.extend({
     this.set('clusters', this.get('clusters').without(this.get('selectedCluster')));
   },
 
-  onRemoveClusterError: function () {
-    App.showAlertPopup(Em.I18n.t('common.error'), Em.I18n.t('mirroring.manageClusters.error') + ': ' + arguments[2]);
+  onError: function (response) {
+    if (response && response.responseText) {
+      var errorMessage = /(?:\<message\>)((.|\n)+)(?:\<\/message\>)/.exec(response.responseText);
+      if (errorMessage.length > 1) {
+        App.showAlertPopup(Em.I18n.t('common.error'), Em.I18n.t('mirroring.manageClusters.error') + ': ' + errorMessage[1]);
+      }
+    }
   },
 
   createNewCluster: function () {
@@ -146,9 +156,9 @@ App.MainMirroringManageClustersController = Em.ArrayController.extend({
     this.get('newClusterPopup').hide();
   },
 
-  onCreateClusterError: function () {
+  onCreateClusterError: function (response) {
     this.set('newClusterPopup.disablePrimary', false);
-    App.showAlertPopup(Em.I18n.t('common.error'), Em.I18n.t('mirroring.manageClusters.error') + ': ' + arguments[2]);
+    this.onError(response);
   },
 
   /**

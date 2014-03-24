@@ -6,6 +6,7 @@ import com.google.inject.Injector;
 
 import org.apache.ambari.server.AmbariException;
 import org.apache.ambari.server.actionmanager.HostRoleStatus;
+import org.apache.ambari.server.api.services.AmbariMetaInfo;
 import org.apache.ambari.server.configuration.Configuration;
 import org.apache.ambari.server.orm.DBAccessor.DBColumnInfo;
 import org.apache.ambari.server.orm.dao.ClusterDAO;
@@ -19,6 +20,7 @@ import org.apache.ambari.server.orm.dao.KeyValueDAO;
 import org.apache.ambari.server.orm.dao.ServiceComponentDesiredStateDAO;
 import org.apache.ambari.server.orm.entities.ClusterConfigEntity;
 import org.apache.ambari.server.orm.entities.ClusterConfigEntityPK;
+import org.apache.ambari.server.orm.entities.ClusterConfigMappingEntity;
 import org.apache.ambari.server.orm.entities.ClusterEntity;
 import org.apache.ambari.server.orm.entities.ClusterServiceEntity;
 import org.apache.ambari.server.orm.entities.ClusterServiceEntityPK;
@@ -32,6 +34,8 @@ import org.apache.ambari.server.orm.entities.KeyValueEntity;
 import org.apache.ambari.server.orm.entities.ServiceComponentDesiredStateEntity;
 import org.apache.ambari.server.orm.entities.ServiceComponentDesiredStateEntityPK;
 import org.apache.ambari.server.state.HostComponentAdminState;
+import org.apache.ambari.server.state.PropertyInfo;
+import org.apache.ambari.server.state.ServiceInfo;
 import org.apache.ambari.server.state.State;
 import org.eclipse.persistence.jpa.JpaEntityManager;
 import org.slf4j.Logger;
@@ -48,6 +52,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Collection;
+import java.util.HashMap;
 
 public class UpgradeCatalog150 extends AbstractUpgradeCatalog {
   private static final Logger LOG = LoggerFactory.getLogger(UpgradeCatalog150.class);
@@ -197,6 +203,14 @@ public class UpgradeCatalog150 extends AbstractUpgradeCatalog {
 
     dbAccessor.createTable("blueprint", columns, "blueprint_name");
 
+    // Blueprint Config
+    columns.clear();
+    columns.add(new DBColumnInfo("blueprint_name", String.class, 255, null, false));
+    columns.add(new DBColumnInfo("type_name", String.class, 255, null, false));
+    columns.add(new DBColumnInfo("config_data", byte[].class, null, null, false));
+
+    dbAccessor.createTable("blueprint_configuration", columns, "blueprint_name", "type_name");
+
     // HostGroup
     columns.clear();
     columns.add(new DBColumnInfo("blueprint_name", String.class, 255, null, false));
@@ -272,7 +286,7 @@ public class UpgradeCatalog150 extends AbstractUpgradeCatalog {
       String msg = String.format("Table \"%s\" was not created during schema upgrade", tableName);
       LOG.error(msg);
       throw new AmbariException(msg);
-    }else if (!dbAccessor.tableHasData(tableName)) {
+    } else if (!dbAccessor.tableHasData(tableName)) {
       String query;
       if (getDbType().equals(Configuration.POSTGRES_DB_NAME)) {
         query = getPostgresRequestUpgradeQuery();
@@ -293,17 +307,20 @@ public class UpgradeCatalog150 extends AbstractUpgradeCatalog {
     dbAccessor.addFKConstraint("stage", "FK_stage_request_id", "request_id", "request", "request_id", true);
     dbAccessor.addFKConstraint("request", "FK_request_cluster_id", "cluster_id", "clusters", "cluster_id", true);
     dbAccessor.addFKConstraint("request", "FK_request_schedule_id", "request_schedule_id", "requestschedule", "schedule_id", true);
-    dbAccessor.addFKConstraint("requestschedulebatchrequest", "FK_requestschedulebatchrequest_schedule_id", "schedule_id", "requestschedule", "schedule_id", true);
-    dbAccessor.addFKConstraint("hostconfigmapping", "FK_hostconfigmapping_cluster_id", "cluster_id", "clusters", "cluster_id", true);
-    dbAccessor.addFKConstraint("hostconfigmapping", "FK_hostconfigmapping_host_name", "host_name", "hosts", "host_name", true);
+    dbAccessor.addFKConstraint("requestschedulebatchrequest", "FK_rsbatchrequest_schedule_id", "schedule_id", "requestschedule", "schedule_id", true);
+    dbAccessor.addFKConstraint("hostconfigmapping", "FK_hostconfmapping_cluster_id", "cluster_id", "clusters", "cluster_id", true);
+    dbAccessor.addFKConstraint("hostconfigmapping", "FK_hostconfmapping_host_name", "host_name", "hosts", "host_name", true);
     dbAccessor.addFKConstraint("configgroup", "FK_configgroup_cluster_id", "cluster_id", "clusters", "cluster_id", true);
     dbAccessor.addFKConstraint("confgroupclusterconfigmapping", "FK_cg_cluster_cm_config_tag", new String[] {"version_tag", "config_type", "cluster_id"}, "clusterconfig", new String[] {"version_tag", "type_name", "cluster_id"}, true);
     dbAccessor.addFKConstraint("confgroupclusterconfigmapping", "FK_cg_cluster_cm_group_id", "config_group_id", "configgroup", "group_id", true);
     dbAccessor.addFKConstraint("configgrouphostmapping", "FK_cghostm_configgroup_id", "config_group_id", "configgroup", "group_id", true);
     dbAccessor.addFKConstraint("configgrouphostmapping", "FK_cghostm_host_name", "host_name", "hosts", "host_name", true);
     dbAccessor.addFKConstraint("clusterconfigmapping", "FK_clustercfgmap_cluster_id", "cluster_id", "clusters", "cluster_id", true);
-    dbAccessor.addFKConstraint("requestresourcefilter", "FK_requestresourcefilter_req_id", "request_id", "request", "request_id", true);
-
+    dbAccessor.addFKConstraint("requestresourcefilter", "FK_reqresfilter_req_id", "request_id", "request", "request_id", true);
+    dbAccessor.addFKConstraint("hostgroup", "FK_hostgroup_blueprint_name", "blueprint_name", "blueprint", "blueprint_name", true);
+    dbAccessor.addFKConstraint("hostgroup_component", "FK_hg_blueprint_name", "blueprint_name", "hostgroup", "blueprint_name", true);
+    dbAccessor.addFKConstraint("hostgroup_component", "FK_hgc_blueprint_name", "hostgroup_name", "hostgroup", "name", true);
+    dbAccessor.addFKConstraint("blueprint_configuration", "FK_cfg_blueprint_name", "blueprint_name", "blueprint", "blueprint_name", true);
   }
 
   private void moveRCATableInMySQL(String tableName, String dbName) throws SQLException {
@@ -358,12 +375,18 @@ public class UpgradeCatalog150 extends AbstractUpgradeCatalog {
       }
     }
 
-    //add new sequence for config groups
-    dbAccessor.executeQuery("INSERT INTO ambari_sequences(sequence_name, \"value\") " +
+    //add new sequences for config groups
+    //TODO evalate possibility to automatically wrap object names in DBAcessor
+    String valueColumnName = "\"value\"";
+    if (Configuration.ORACLE_DB_NAME.equals(dbType) || Configuration.MYSQL_DB_NAME.equals(dbType)) {
+      valueColumnName = "value";
+    }
+
+    dbAccessor.executeQuery("INSERT INTO ambari_sequences(sequence_name, " + valueColumnName + ") " +
       "VALUES('configgroup_id_seq', 1)", true);
-    dbAccessor.executeQuery("INSERT INTO ambari_sequences(sequence_name, \"value\") " +
+    dbAccessor.executeQuery("INSERT INTO ambari_sequences(sequence_name, " + valueColumnName + ") " +
       "VALUES('requestschedule_id_seq', 1)", true);
-    dbAccessor.executeQuery("INSERT INTO ambari_sequences(sequence_name, \"value\") " +
+    dbAccessor.executeQuery("INSERT INTO ambari_sequences(sequence_name, " + valueColumnName + ") " +
       "VALUES('resourcefilter_id_seq', 1)", true);
 
     //clear cache due to direct table manipulation
@@ -448,8 +471,15 @@ public class UpgradeCatalog150 extends AbstractUpgradeCatalog {
         addHistoryServer();
       }
     });
-    
-      
+
+    // Add default log4j configs if they are absent
+    executeInTransaction(new Runnable() {
+      @Override
+      public void run() {
+        addMissingLog4jConfigs();
+      }
+    });
+
     // ========================================================================
     // Finally update schema version
     updateMetaInfoVersion(getTargetVersion());
@@ -467,7 +497,7 @@ public class UpgradeCatalog150 extends AbstractUpgradeCatalog {
       }
     });
   }
-  
+
   protected void addHistoryServer() {
     ClusterDAO clusterDAO = injector.getInstance(ClusterDAO.class);
     ClusterServiceDAO clusterServiceDAO = injector.getInstance(ClusterServiceDAO.class);
@@ -499,8 +529,11 @@ public class UpgradeCatalog150 extends AbstractUpgradeCatalog {
 
       
       HostComponentStateEntity jtHostComponentStateEntity = serviceComponentDesiredStateEntityJT.getHostComponentStateEntities().iterator().next();
+      HostComponentDesiredStateEntity jtHostComponentDesiredStateEntity = serviceComponentDesiredStateEntityJT.getHostComponentDesiredStateEntities().iterator().next();
       String jtHostname = jtHostComponentStateEntity.getHostName();
       State jtCurrState = jtHostComponentStateEntity.getCurrentState();
+      State jtHostComponentDesiredState = jtHostComponentDesiredStateEntity.getDesiredState();
+      State jtServiceComponentDesiredState = serviceComponentDesiredStateEntityJT.getDesiredState();
           
       ClusterServiceEntityPK pk = new ClusterServiceEntityPK();
       pk.setClusterId(clusterEntity.getClusterId());
@@ -512,7 +545,7 @@ public class UpgradeCatalog150 extends AbstractUpgradeCatalog {
       final ServiceComponentDesiredStateEntity serviceComponentDesiredStateEntity = new ServiceComponentDesiredStateEntity();
       serviceComponentDesiredStateEntity.setComponentName("HISTORYSERVER");
       serviceComponentDesiredStateEntity.setDesiredStackVersion(clusterEntity.getDesiredStackVersion());
-      serviceComponentDesiredStateEntity.setDesiredState(State.STARTED);
+      serviceComponentDesiredStateEntity.setDesiredState(jtServiceComponentDesiredState);
       serviceComponentDesiredStateEntity.setClusterServiceEntity(clusterServiceEntity);
       serviceComponentDesiredStateEntity.setHostComponentDesiredStateEntities(new ArrayList<HostComponentDesiredStateEntity>());
 
@@ -522,7 +555,7 @@ public class UpgradeCatalog150 extends AbstractUpgradeCatalog {
       stateEntity.setCurrentStackVersion(clusterEntity.getDesiredStackVersion());
       
       final HostComponentDesiredStateEntity desiredStateEntity = new HostComponentDesiredStateEntity();
-      desiredStateEntity.setDesiredState(State.STARTED);
+      desiredStateEntity.setDesiredState(jtHostComponentDesiredState);
       desiredStateEntity.setDesiredStackVersion(clusterEntity.getDesiredStackVersion());
       
       persistComponentEntities(stateEntity, desiredStateEntity, serviceComponentDesiredStateEntity);
@@ -551,6 +584,97 @@ public class UpgradeCatalog150 extends AbstractUpgradeCatalog {
 
     serviceComponentDesiredStateDAO.create(serviceComponentDesiredStateEntity);
     hostDAO.merge(hostEntity);
+  }
+
+  protected void addMissingLog4jConfigs() {
+
+    final String log4jConfigTypeContains = "log4j";
+    final String defaultVersionTag = "version1";
+    final String defaultUser = "admin";
+
+    LOG.debug("Adding missing configs into Ambari DB.");
+    ClusterDAO clusterDAO = injector.getInstance(ClusterDAO.class);
+    ClusterServiceDAO clusterServiceDAO = injector.getInstance(ClusterServiceDAO.class);
+
+    AmbariMetaInfo ambariMetaInfo = injector.getInstance(AmbariMetaInfo.class);
+    Gson gson = injector.getInstance(Gson.class);
+
+    List <ClusterEntity> clusterEntities = clusterDAO.findAll();
+    for (final ClusterEntity clusterEntity : clusterEntities) {
+      Long clusterId = clusterEntity.getClusterId();
+      String desiredStackVersion = clusterEntity.getDesiredStackVersion();
+
+      Map<String, String> clusterInfo =
+        gson.<Map<String, String>>fromJson(desiredStackVersion, Map.class);
+
+      String stackName = clusterInfo.get("stackName");
+      String stackVersion = clusterInfo.get("stackVersion");
+
+      List<ClusterServiceEntity> clusterServiceEntities = clusterServiceDAO.findAll();
+      for (final ClusterServiceEntity clusterServiceEntity : clusterServiceEntities) {
+        String serviceName = clusterServiceEntity.getServiceName();
+        ServiceInfo serviceInfo = null;
+        try {
+          serviceInfo = ambariMetaInfo.getService(stackName, stackVersion, serviceName);
+        } catch (AmbariException e) {
+          LOG.error("Service " + serviceName + " not found for " + stackName + stackVersion);
+          continue;
+        }
+        List<String> configTypes = serviceInfo.getConfigDependencies();
+        if (configTypes != null) {
+          for (String configType : configTypes) {
+            if (configType.contains(log4jConfigTypeContains)) {
+              ClusterConfigEntityPK configEntityPK = new ClusterConfigEntityPK();
+              configEntityPK.setClusterId(clusterId);
+              configEntityPK.setType(configType);
+              configEntityPK.setTag(defaultVersionTag);
+              ClusterConfigEntity configEntity = clusterDAO.findConfig(configEntityPK);
+
+              if (configEntity == null) {
+                String filename = configType + ".xml";
+                Map<String, String> properties = new HashMap<String, String>();
+                for (PropertyInfo propertyInfo : serviceInfo.getProperties()) {
+                  if (filename.equals(propertyInfo.getFilename())) {
+                    properties.put(propertyInfo.getName(), propertyInfo.getValue());
+                  }
+                }
+                if (!properties.isEmpty()) {
+                  String configData = gson.toJson(properties);
+                  configEntity = new ClusterConfigEntity();
+                  configEntity.setClusterId(clusterId);
+                  configEntity.setType(configType);
+                  configEntity.setTag(defaultVersionTag);
+                  configEntity.setData(configData);
+                  configEntity.setTimestamp(System.currentTimeMillis());
+                  configEntity.setClusterEntity(clusterEntity);
+                  LOG.debug("Creating new " + configType + " config...");
+                  clusterDAO.createConfig(configEntity);
+
+                  Collection<ClusterConfigMappingEntity> entities =
+                    clusterEntity.getConfigMappingEntities();
+
+                  ClusterConfigMappingEntity clusterConfigMappingEntity =
+                    new ClusterConfigMappingEntity();
+                  clusterConfigMappingEntity.setClusterEntity(clusterEntity);
+                  clusterConfigMappingEntity.setClusterId(clusterId);
+                  clusterConfigMappingEntity.setType(configType);
+                  clusterConfigMappingEntity.setCreateTimestamp(
+                    Long.valueOf(System.currentTimeMillis()));
+                  clusterConfigMappingEntity.setSelected(1);
+                  clusterConfigMappingEntity.setUser(defaultUser);
+                  clusterConfigMappingEntity.setVersion(configEntity.getTag());
+                  entities.add(clusterConfigMappingEntity);
+                  clusterDAO.merge(clusterEntity);
+                }
+              }
+            }
+
+          }
+
+        }
+      }
+    }
+    LOG.debug("Missing configs have been successfully added into Ambari DB.");
   }
 
   protected void processDecommissionedDatanodes() {
@@ -644,7 +768,7 @@ public class UpgradeCatalog150 extends AbstractUpgradeCatalog {
     return "INSERT INTO request" +
       "(request_id, cluster_id, request_context, start_time, end_time, create_time) " +
       "SELECT DISTINCT s.request_id, s.cluster_id, s.request_context, " +
-      "nvl(cmd.start_time, -1), nvl(cmd.end_time, -1), -1" +
+      "nvl(cmd.start_time, -1), nvl(cmd.end_time, -1), -1 " +
       "FROM " +
       "(SELECT DISTINCT request_id, cluster_id, request_context FROM stage ) s " +
       "LEFT JOIN " +

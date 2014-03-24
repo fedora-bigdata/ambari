@@ -53,6 +53,7 @@ regionserver_xmn_size = calc_xmn_from_xms(regionserver_heapsize, 0.2, 512)
 
 pid_dir = status_params.pid_dir
 tmp_dir = config['configurations']['hbase-site']['hbase.tmp.dir']
+# TODO UPGRADE default, update site during upgrade
 _local_dir_conf = default('/configurations/hbase-site/hbase.local.dir', "${hbase.tmp.dir}/local")
 local_dir = substitute_vars(_local_dir_conf, config['configurations']['hbase-site'])
 
@@ -70,21 +71,10 @@ smokeuser_permissions = default('smokeuser_permissions', "RWXCA")
 service_check_data = functions.get_unique_id_and_date()
 
 if security_enabled:
-  
-  _use_hostname_in_principal = default('instance_name', True)
-  _master_primary_name = config['configurations']['global']['hbase_master_primary_name']
   _hostname_lowercase = config['hostname'].lower()
-  _kerberos_domain = config['configurations']['global']['kerberos_domain']
-  _master_principal_name = config['configurations']['global']['hbase_master_principal_name']
-  _regionserver_primary_name = config['configurations']['global']['hbase_regionserver_primary_name']
-  
-  if _use_hostname_in_principal:
-    master_jaas_princ = format("{_master_primary_name}/{_hostname_lowercase}@{_kerberos_domain}")
-    regionserver_jaas_princ = format("{_regionserver_primary_name}/{_hostname_lowercase}@{_kerberos_domain}")
-  else:
-    master_jaas_princ = format("{_master_principal_name}@{_kerberos_domain}")
-    regionserver_jaas_princ = format("{_regionserver_primary_name}@{_kerberos_domain}")
-    
+  master_jaas_princ = config['configurations']['hbase-site']['hbase.master.kerberos.principal'].replace('_HOST',_hostname_lowercase)
+  regionserver_jaas_princ = config['configurations']['hbase-site']['hbase.regionserver.kerberos.principal'].replace('_HOST',_hostname_lowercase)
+
 master_keytab_path = config['configurations']['hbase-site']['hbase.master.keytab.file']
 regionserver_keytab_path = config['configurations']['hbase-site']['hbase.regionserver.keytab.file']
 smoke_user_keytab = config['configurations']['global']['smokeuser_keytab']

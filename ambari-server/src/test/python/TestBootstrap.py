@@ -317,7 +317,7 @@ class TestBootstrap(TestCase):
                                None, "8440")
     bootstrap_obj = Bootstrap("hostname", shared_state)
     ocs = bootstrap_obj.getOsCheckScript()
-    self.assertEquals(ocs, "scriptDir/os_type_check.sh")
+    self.assertEquals(ocs, "scriptDir/os_check.py")
 
 
   @patch.object(Bootstrap, "getRemoteName")
@@ -326,7 +326,7 @@ class TestBootstrap(TestCase):
                                "setupAgentFile", "ambariServer", "centos6",
                                None, "8440")
     bootstrap_obj = Bootstrap("hostname", shared_state)
-    v = "/tmp/os_type_check1374259902.sh"
+    v = "/tmp/os_check1374259902.py"
     getRemoteName_mock.return_value = v
     ocs = bootstrap_obj.getOsCheckScriptRemoteLocation()
     self.assertEquals(ocs, v)
@@ -620,10 +620,17 @@ class TestBootstrap(TestCase):
                                None, "8440")
     bootstrap_obj = Bootstrap("hostname", shared_state)
     # Normal case
-    ret = bootstrap_obj.try_to_execute(lambda : {"exitstatus": expected})
+    def act_normal_return_int():
+      return 43
+    ret = bootstrap_obj.try_to_execute(act_normal_return_int)
     self.assertEqual(ret["exitstatus"], expected)
     self.assertFalse(write_mock.called)
-
+    write_mock.reset_mock()
+    def act_normal_return():
+        return {"exitstatus": 43}
+    ret = bootstrap_obj.try_to_execute(act_normal_return)
+    self.assertEqual(ret["exitstatus"], expected)
+    self.assertFalse(write_mock.called)
     write_mock.reset_mock()
     # Exception scenario
     def act():

@@ -182,8 +182,8 @@ class TestResourceManager(RMFTestCase):
       owner = 'yarn',
       group = 'hadoop',
     )
-    self.assertResourceCalled('File', '/var/log/hadoop-mapreduce/mapred/hadoop-mapreduce.jobsummary.log',
-      owner = 'mapred',
+    self.assertResourceCalled('File', '/etc/hadoop/conf/yarn.exclude',
+      owner = 'yarn',
       group = 'hadoop',
     )
     self.assertResourceCalled('File', '/etc/security/limits.d/yarn.conf',
@@ -267,8 +267,8 @@ class TestResourceManager(RMFTestCase):
       owner = 'yarn',
       group = 'hadoop',
     )
-    self.assertResourceCalled('File', '/var/log/hadoop-mapreduce/mapred/hadoop-mapreduce.jobsummary.log',
-      owner = 'mapred',
+    self.assertResourceCalled('File', '/etc/hadoop/conf/yarn.exclude',
+      owner = 'yarn',
       group = 'hadoop',
     )
     self.assertResourceCalled('File', '/etc/security/limits.d/yarn.conf',
