@@ -259,7 +259,8 @@ Em.I18n.translations = {
   'login.header':'Sign in',
   'login.username':'Username',
   'login.loginButton':'Sign in',
-  'login.error':'Invalid username/password combination.',
+  'login.error.bad.credentials':'Unable to sign in. Invalid username/password combination.',
+  'login.error.bad.connection':'Unable to connect to Ambari Server. Confirm Ambari Server is running and you can reach Ambari Server from this machine.',
 
   'graphs.noData.title': 'No Data',
   'graphs.noData.message': 'There was no data available. Possible reasons include inaccessible Ganglia service.',
@@ -1948,7 +1949,7 @@ Em.I18n.translations = {
   'rollingrestart.context.allClientsOnSelectedHost':'Restart all clients on {0}',
   'rollingrestart.context.allWithStaleConfigsOnSelectedHost':'Restart components with Stale Configs on {0}',
   'rollingrestart.context.allOnSelectedHost':'Restart all components on {0}',
-  'rollingrestart.context.selectedComponentOnSelectedHost':'Restart {0} on {1}',
+  'rollingrestart.context.selectedComponentOnSelectedHost':'Restart {0}',
   'rollingrestart.context.default':'Restart components',
 
   'rolling.command.context': 'Rolling set {0} to state "{1}" - batch {2} of {3}',
