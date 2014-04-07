@@ -37,7 +37,7 @@ App.WizardStep3View = App.TableView.extend({
 
   registeredHostsMessage: '',
 
-  displayLength: "20",
+  displayLength: "25",
 
   didInsertElement: function () {
     this.get('controller').loadStep();
@@ -145,14 +145,17 @@ App.WizardStep3View = App.TableView.extend({
    * filter hosts by category
    */
   filter: function () {
-    var result = [];
-    var selectedCategory = this.get('selectedCategory');
-    if (!selectedCategory || selectedCategory.get('hostsBootStatus') === 'ALL') {
-      result = this.get('content');
-    } else {
-      result = this.get('content').filterProperty('bootStatus', this.get('selectedCategory.hostsBootStatus'));
-    }
-    this.set('filteredContent', result);
+    var self = this;
+    Em.run.next(function () {
+      var result = [];
+      var selectedCategory = self.get('selectedCategory');
+      if (!selectedCategory || selectedCategory.get('hostsBootStatus') === 'ALL') {
+        result = self.get('content');
+      } else {
+        result = self.get('content').filterProperty('bootStatus', self.get('selectedCategory.hostsBootStatus'));
+      }
+      self.set('filteredContent', result);
+    });
   }.observes('selectedCategory'),
   /**
    * Trigger on Category click
@@ -165,6 +168,16 @@ App.WizardStep3View = App.TableView.extend({
       category.set('isActive', (category.get('hostsBootStatus') === categoryStatus));
     });
     this.watchSelection();
+  },
+
+  /**
+   * Select "All" hosts category
+   * run registration of failed hosts again
+   */
+  retrySelectedHosts: function () {
+    var eventObject = {context: Em.Object.create({hostsBootStatus: 'ALL'})};
+    this.selectCategory(eventObject);
+    this.get('controller').retrySelectedHosts();
   },
 
   monitorStatuses: function() {
@@ -206,7 +219,7 @@ App.WizardStep3View = App.TableView.extend({
 App.WizardHostView = Em.View.extend({
 
   tagName: 'tr',
-  classNameBindings: ['hostInfo.bootStatus', 'hostInfo.isVisible::hidden'],
+  classNameBindings: ['hostInfo.bootStatus'],
   hostInfo: null,
 
   remove: function () {

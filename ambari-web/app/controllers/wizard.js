@@ -18,8 +18,9 @@
 
 
 var App = require('app');
+require('models/host');
 
-App.WizardController = Em.Controller.extend({
+App.WizardController = Em.Controller.extend(App.LocalStorage, {
 
   isStepDisabled: null,
 
@@ -44,26 +45,6 @@ App.WizardController = Em.Controller.extend({
         ["GANGLIA_MONITOR", "DASHBOARD", "MYSQL_SERVER"].contains(component.component_name));
     });
   }.property(),
-
-  dbNamespace: function(){
-    return this.get('name').capitalize().replace('Controller', "");
-  }.property('name'),
-  /**
-   * get property from local storage
-   * @param key
-   * @return {*}
-   */
-  getDBProperty: function(key){
-    return App.db.get(this.get('dbNamespace'), key);
-  },
-  /**
-   * set property to local storage
-   * @param key
-   * @param value
-   */
-  setDBProperty: function(key, value){
-    App.db.set(this.get('dbNamespace'), key, value);
-  },
 
   allHosts: App.Host.find(),
 
@@ -518,10 +499,9 @@ App.WizardController = Em.Controller.extend({
   },
 
   loadServicesFromServer: function () {
-    var services = this.getDBProperty('service');
     var apiService = this.loadServiceComponents();
     this.set('content.services', apiService);
-    this.setDBProperty('service',apiService);
+    this.setDBProperty('service', apiService);
   },
   /**
    * Load config groups from local DB

@@ -392,6 +392,12 @@
 
   #jobs-table {
 
+    .is-not-link{
+      cursor: default;
+      color: #000000;
+      text-decoration: none;
+    }
+
     .apply-btn {
       font-size: 12px;
       padding: 0px 8px;
@@ -470,6 +476,9 @@
       width: 100%;
       overflow: auto;
       word-wrap: break-word;
+      a {
+        display: inline-block;
+      }
     }
     td:first-child,
     th:first-child {

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.6
+#!/usr/bin/env python
 
 '''
 Licensed to the Apache Software Foundation (ASF) under one
@@ -23,11 +23,20 @@ import sys
 import platform
 
 
-class OSCheck(object):
-  def __init__(self):
-    pass
+def linux_distribution():
+  PYTHON_VER = sys.version_info[0] * 10 + sys.version_info[1]
 
-  def get_os_type(self):
+  if PYTHON_VER < 26:
+    linux_distribution = platform.dist()
+  else:
+    linux_distribution = platform.linux_distribution()
+
+  return linux_distribution
+
+class OSCheck:
+
+  @staticmethod
+  def get_os_type():
     """
     Return values:
     redhat, fedora, centos, oraclelinux, ascendos,
@@ -38,7 +47,7 @@ class OSCheck(object):
     """
     # Read content from /etc/*-release file
     # Full release name
-    dist = platform.linux_distribution()
+    dist = linux_distribution()
     operatingSystem = dist[0].lower()
 
     # special cases
@@ -52,18 +61,17 @@ class OSCheck(object):
     if operatingSystem != '':
       return operatingSystem
     else:
-      print "Cannot detect os type. Exiting..."
-      sys.exit(1)
+      raise Exception("Cannot detect os type. Exiting...")
 
-
-  def get_os_family(self):
+  @staticmethod
+  def get_os_family():
     """
     Return values:
     redhat, debian, suse ... and others
 
     In case cannot detect raises exception( from self.get_operating_system_type() ).
     """
-    os_family = self.get_os_type()
+    os_family = OSCheck.get_os_type()
     if os_family in ['redhat', 'fedora', 'centos', 'oraclelinux', 'ascendos',
                      'amazon', 'xenserver', 'oel', 'ovs', 'cloudlinux',
                      'slc', 'scientific', 'psbm', 'centos linux']:
@@ -72,11 +80,11 @@ class OSCheck(object):
       os_family = 'Debian'
     elif os_family in ['sles', 'sled', 'opensuse', 'suse']:
       os_family = 'Suse'
-    #else:  os_family = self.get_os_type()
+    #else:  os_family = OSCheck.get_os_type()
     return os_family.lower()
 
-
-  def get_os_version(self):
+  @staticmethod
+  def get_os_version():
     """
     Returns the OS version
 
@@ -84,58 +92,37 @@ class OSCheck(object):
     """
     # Read content from /etc/*-release file
     # Full release name
-    dist = platform.linux_distribution()
+    dist = linux_distribution()
     dist = dist[1]
 
     if dist:
       return dist
     else:
-      print "Cannot detect os version. Exiting..."
-      sys.exit(1)
+      raise Exception("Cannot detect os version. Exiting...")
 
-  def get_os_major_version(self):
+  @staticmethod
+  def get_os_major_version():
     """
     Returns the main OS version like
     Centos 6.5 --> 6
     RedHat 1.2.3 --> 1
     """
-    return self.get_os_version().split('.')[0]
+    return OSCheck.get_os_version().split('.')[0]
 
-  def get_os_release_name(self):
+  @staticmethod
+  def get_os_release_name():
     """
     Returns the OS release name
 
     In case cannot detect raises exception.
     """
-    dist = platform.linux_distribution()
+    dist = linux_distribution()
     dist = dist[2].lower()
 
     if dist:
       return dist
     else:
-      print "Cannot detect os release name. Exiting..."
-      sys.exit(1)
+      raise Exception("Cannot detect os release name. Exiting...")
 
 
-def main(argv=None):
-  # Same logic that was in "os_type_check.sh"
-  if len(sys.argv) != 2:
-    print "Usage: <cluster_os>"
-    sys.exit(2)
-    pass
 
-  cluster_os = sys.argv[1]
-  current_os = OSCheck().get_os_family() + OSCheck().get_os_major_version()
-
-  # If agent/server have the same {"family","main_version"} - then ok.
-  print "Cluster primary/cluster OS type is %s and local/current OS type is %s" % (
-    cluster_os, current_os)
-  if current_os == cluster_os:
-    sys.exit(0)
-  else:
-    print "Local OS is not compatible with cluster primary OS. Please perform manual bootstrap on this host."
-    sys.exit(1)
-
-
-if __name__ == "__main__":
-  main()

@@ -37,6 +37,8 @@ hive_lib = '/usr/lib/hive/lib/'
 hive_jdbc_driver = config['configurations']['hive-site']['javax.jdo.option.ConnectionDriverName']
 if hive_jdbc_driver == "com.mysql.jdbc.Driver":
   jdbc_jar_name = "mysql-connector-java.jar"
+elif hive_jdbc_driver == "org.postgresql.Driver":
+  jdbc_jar_name = "postgresql-jdbc.jar"
 elif hive_jdbc_driver == "oracle.jdbc.driver.OracleDriver":
   jdbc_jar_name = "ojdbc6.jar"
 
@@ -47,7 +49,8 @@ check_db_connection_jar = format("/usr/lib/ambari-agent/{check_db_connection_jar
 hive_metastore_port = config['configurations']['global']['hive_metastore_port']
 hive_var_lib = '/var/lib/hive'
 hive_server_host = config['clusterHostInfo']['hive_server_host'][0]
-hive_url = format("jdbc:hive2://{hive_server_host}:10000")
+hive_server_port = 10000
+hive_url = format("jdbc:hive2://{hive_server_host}:{hive_server_port}")
 
 smokeuser = config['configurations']['global']['smokeuser']
 smoke_test_sql = "/tmp/hiveserver2.sql"

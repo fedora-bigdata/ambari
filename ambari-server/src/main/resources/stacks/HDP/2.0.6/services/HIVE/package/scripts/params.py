@@ -38,6 +38,8 @@ hive_lib = '/usr/lib/hive/lib/'
 hive_jdbc_driver = config['configurations']['hive-site']['javax.jdo.option.ConnectionDriverName']
 if hive_jdbc_driver == "com.mysql.jdbc.Driver":
   jdbc_jar_name = "mysql-connector-java.jar"
+elif hive_jdbc_driver == "org.postgresql.Driver":
+  jdbc_jar_name = "postgresql-jdbc.jar"
 elif hive_jdbc_driver == "oracle.jdbc.driver.OracleDriver":
   jdbc_jar_name = "ojdbc6.jar"
 
@@ -50,7 +52,8 @@ hive_metastore_port = config['configurations']['global']['hive_metastore_port']
 hive_var_lib = '/var/lib/hive'
 hive_bin = '/usr/lib/hive/bin'
 hive_server_host = config['clusterHostInfo']['hive_server_host'][0]
-hive_url = format("jdbc:hive2://{hive_server_host}:10000")
+hive_server_port = 10000
+hive_url = format("jdbc:hive2://{hive_server_host}:{hive_server_port}")
 
 smokeuser = config['configurations']['global']['smokeuser']
 smoke_test_sql = "/tmp/hiveserver2.sql"
@@ -74,7 +77,7 @@ hive_pid = status_params.hive_pid
 hive_database_name = config['configurations']['global']['hive_database_name']
 
 #Starting hiveserver2
-start_hiveserver2_script = 'startHiveserver2.sh'
+start_hiveserver2_script = 'startHiveserver2.sh.j2'
 
 hadoop_home = '/usr'
 
@@ -169,8 +172,8 @@ tez_local_api_jars = '/usr/lib/tez/tez*.jar'
 tez_local_lib_jars = '/usr/lib/tez/lib/*.jar'
 tez_user = config['configurations']['global']['tez_user']
 
-hive_exec_jar_path = '/usr/lib/hive/lib/hive-exec.jar'
-hive_exec_hdfs_path = default('/configurations/hive-site/hive.jar.directory', '/apps/hive/install')
+# Hive security
+hive_authorization_enabled = config['configurations']['hive-site']['hive.security.authorization.enabled']
 
 import functools
 #create partial functions with common arguments for every HdfsDirectory call

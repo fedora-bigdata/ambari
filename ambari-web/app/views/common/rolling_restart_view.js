@@ -33,6 +33,19 @@ App.RollingRestartView = Em.View.extend({
   hostComponentName : null,
 
   /**
+   * Service name for components that should be restarted
+   * @type {String}
+   */
+  serviceName : null,
+
+  /**
+   * If service is in Maintenance Mode
+   * @type {bool}
+   */
+  isServiceInMM: false,
+
+
+  /**
    * Restart only components with <code>staleConfigs</code>
    * @type {bool}
    */
@@ -72,7 +85,7 @@ App.RollingRestartView = Em.View.extend({
    */
   initialize : function() {
     if (this.get('batchSize') == -1 && this.get('interBatchWaitTimeSeconds') == -1 && this.get('tolerateSize') == -1) {
-      var restartCount = this.get('restartHostComponents');
+      var restartCount = this.get('restartHostComponents.length');
       var batchSize = 1;
       if (restartCount > 10) {
         batchSize = Math.ceil(restartCount / 10);
@@ -164,6 +177,17 @@ App.RollingRestartView = Em.View.extend({
     }
     return hostComponents;
   }.property('nonMaintainanceHostComponents', 'staleConfigsOnly'),
+
+  /**
+   * @type {String}
+   */
+  suggestTurnOnMaintenanceMsg : function() {
+    if (!this.get('isServiceInMM')) {
+      return Em.I18n.t('rollingrestart.dialog.msg.serviceNotInMM').format(this.get('serviceName'));
+    } else {
+      return null;
+    }
+  }.property('isServiceInMM'),
 
   /**
    * @type {String}

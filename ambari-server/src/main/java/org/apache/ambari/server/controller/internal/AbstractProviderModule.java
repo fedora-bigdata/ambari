@@ -51,6 +51,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * An abstract provider module implementation.
@@ -66,13 +67,10 @@ public abstract class AbstractProviderModule implements ProviderModule, Resource
   private static final String HOST_COMPONENT_COMPONENT_NAME_PROPERTY_ID = PropertyHelper.getPropertyId("HostRoles", "component_name");
   private static final String GANGLIA_SERVER                            = "GANGLIA_SERVER";
   private static final String PROPERTIES_CATEGORY = "properties";
-  private static final Map<Service.Type, String> serviceConfigVersions =
-    Collections.synchronizedMap(new HashMap<Service.Type, String>());
+  private static final Map<Service.Type, String> serviceConfigVersions = new ConcurrentHashMap<Service.Type, String>();
   private static final Map<Service.Type, String> serviceConfigTypes = new HashMap<Service.Type, String>();
-  private static final Map<Service.Type, Map<String, String[]>> serviceDesiredProperties = new
-    HashMap<Service.Type, Map<String, String[]>>();
-  private static final Map<String, Service.Type> componentServiceMap = new
-    HashMap<String, Service.Type>();
+  private static final Map<Service.Type, Map<String, String[]>> serviceDesiredProperties = new HashMap<Service.Type, Map<String, String[]>>();
+  private static final Map<String, Service.Type> componentServiceMap = new HashMap<String, Service.Type>();
   
   private static final Map<String, Map<String, String[]>> jmxDesiredProperties = new HashMap<String, Map<String,String[]>>();
   private volatile Map<String, String> clusterCoreSiteConfigVersionMap = new HashMap<String, String>();
@@ -83,6 +81,7 @@ public abstract class AbstractProviderModule implements ProviderModule, Resource
     serviceConfigTypes.put(Service.Type.MAPREDUCE, "mapred-site");
     serviceConfigTypes.put(Service.Type.HBASE, "hbase-site");
     serviceConfigTypes.put(Service.Type.YARN, "yarn-site");
+    serviceConfigTypes.put(Service.Type.MAPREDUCE2, "mapred-site");
  
     componentServiceMap.put("NAMENODE", Service.Type.HDFS);
     componentServiceMap.put("DATANODE", Service.Type.HDFS);
@@ -90,6 +89,8 @@ public abstract class AbstractProviderModule implements ProviderModule, Resource
     componentServiceMap.put("TASKTRACKER", Service.Type.MAPREDUCE);
     componentServiceMap.put("HBASE_MASTER", Service.Type.HBASE);
     componentServiceMap.put("RESOURCEMANAGER", Service.Type.YARN);
+    componentServiceMap.put("NODEMANAGER", Service.Type.YARN);
+    componentServiceMap.put("HISTORYSERVER", Service.Type.MAPREDUCE2);
 
     Map<String, String[]> initPropMap = new HashMap<String, String[]>();
     initPropMap.put("NAMENODE", new String[] {"dfs.http.address", "dfs.namenode.http-address"});
@@ -107,8 +108,13 @@ public abstract class AbstractProviderModule implements ProviderModule, Resource
 
     initPropMap = new HashMap<String, String[]>();
     initPropMap.put("RESOURCEMANAGER", new String[] {"yarn.resourcemanager.webapp.address"});
+    initPropMap.put("NODEMANAGER", new String[] {"yarn.nodemanager.webapp.address"});
     serviceDesiredProperties.put(Service.Type.YARN, initPropMap);
-    
+
+    initPropMap = new HashMap<String, String[]>();
+    initPropMap.put("HISTORYSERVER", new String[] {"mapreduce.jobhistory.webapp.address"});
+    serviceDesiredProperties.put(Service.Type.MAPREDUCE2, initPropMap);
+
     initPropMap = new HashMap<String, String[]>();
     initPropMap.put("NAMENODE", new String[] {"hadoop.ssl.enabled"});
     jmxDesiredProperties.put("NAMENODE", initPropMap);
@@ -140,8 +146,8 @@ public abstract class AbstractProviderModule implements ProviderModule, Resource
   /**
    * JMX ports read from the configs
    */
-  private final Map<String, Map<String, String>> jmxPortMap = Collections
-    .synchronizedMap(new HashMap<String, Map<String, String>>());
+  private final Map<String, Map<String, String>> jmxPortMap =
+    new HashMap<String, Map<String, String>>();
 
   private volatile boolean initialized = false;
 
@@ -204,14 +210,14 @@ public abstract class AbstractProviderModule implements ProviderModule, Resource
   }
 
   @Override
-  public String getPort(String clusterName, String componentName) throws
-    SystemException {
-    Map<String,String> clusterJmxPorts = jmxPortMap.get(clusterName);
+  public String getPort(String clusterName, String componentName) throws SystemException {
+    // Parent map need not be synchronized
+    Map<String, String> clusterJmxPorts = jmxPortMap.get(clusterName);
     if (clusterJmxPorts == null) {
       synchronized (jmxPortMap) {
         clusterJmxPorts = jmxPortMap.get(clusterName);
         if (clusterJmxPorts == null) {
-          clusterJmxPorts = new HashMap<String, String>();
+          clusterJmxPorts = new ConcurrentHashMap<String, String>();
           jmxPortMap.put(clusterName, clusterJmxPorts);
         }
       }
@@ -220,11 +226,16 @@ public abstract class AbstractProviderModule implements ProviderModule, Resource
     
     if (service != null) {
       try {
-        String currVersion = getDesiredConfigVersion(clusterName,
-          serviceConfigTypes.get(service));
-
+        String currVersion = getDesiredConfigVersion(clusterName, serviceConfigTypes.get(service));
         String oldVersion = serviceConfigVersions.get(service);
-        if (!currVersion.equals(oldVersion)) {
+
+        // We only update port map when a config version updates,
+        // Since concurrent thread access is expected we err on the side of
+        // performance with a ConcurrentHashMap and maybe get default/existing
+        // ports for a few calls.
+        if (!currVersion.equals(oldVersion) ||
+          !clusterJmxPorts.containsKey(componentName)) {
+
           serviceConfigVersions.put(service, currVersion);
           
           Map<String, String> portMap = getDesiredConfigMap(clusterName,
@@ -232,8 +243,7 @@ public abstract class AbstractProviderModule implements ProviderModule, Resource
             serviceDesiredProperties.get(service));
           
           for (String compName : portMap.keySet()) {
-            clusterJmxPorts.put(compName, getPortString(portMap.get
-              (compName)));
+            clusterJmxPorts.put(compName, getPortString(portMap.get(compName)));
           }
         }
       } catch (Exception e) {

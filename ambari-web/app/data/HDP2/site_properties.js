@@ -253,8 +253,32 @@ module.exports =
     },
     {
       "id": "site property",
+      "name": "yarn.timeline-service.leveldb-timeline-store.ttl-interval-ms",
+      "displayName": "yarn.timeline-service.leveldb-timeline-store.ttl-interval-ms",
+      "displayType": "int",
+      "category": "AppTimelineServer",
+      "serviceName": "YARN"
+    },
+    {
+      "id": "site property",
       "name": "yarn.timeline-service.store-class",
       "displayName": "yarn.timeline-service.store-class",
+      "category": "AppTimelineServer",
+      "serviceName": "YARN"
+    },
+    {
+      "id": "site property",
+      "name": "yarn.timeline-service.ttl-enable",
+      "displayName": "yarn.timeline-service.ttl-enable",
+      "displayType": "checkbox",
+      "category": "AppTimelineServer",
+      "serviceName": "YARN"
+    },
+    {
+      "id": "site property",
+      "name": "yarn.timeline-service.ttl-ms",
+      "displayName": "yarn.timeline-service.ttl-ms",
+      "displayType": "int",
       "category": "AppTimelineServer",
       "serviceName": "YARN"
     },
@@ -438,6 +462,86 @@ module.exports =
       "category": "Hive Metastore",
       "index": 4
     },
+  /**********************************************tez-site*****************************************/
+    {
+      "id": "site property",
+      "name": "tez.am.resource.memory.mb",
+      "displayName": "tez.am.resource.memory.mb",
+      "displayType": "int",
+      "category": "General",
+      "serviceName": "TEZ"
+    },
+    {
+      "id": "site property",
+      "name": "tez.am.java.opts",
+      "displayName": "tez.am.java.opts",
+      "category": "General",
+      "serviceName": "TEZ"
+    },
+    {
+      "id": "site property",
+      "name": "tez.am.grouping.split-waves",
+      "displayName": "tez.am.grouping.split-waves",
+      "displayType": "float",
+      "category": "General",
+      "serviceName": "TEZ"
+    },
+    {
+      "id": "site property",
+      "name": "tez.am.grouping.min-size",
+      "displayName": "tez.am.grouping.min-size",
+      "displayType": "int",
+      "category": "General",
+      "serviceName": "TEZ"
+    },
+    {
+      "id": "site property",
+      "name": "tez.am.grouping.max-size",
+      "displayName": "tez.am.grouping.max-size",
+      "displayType": "int",
+      "category": "General",
+      "serviceName": "TEZ"
+    },
+    {
+      "id": "site property",
+      "name": "tez.am.log.level",
+      "displayName": "tez.am.log.level",
+      "displayType": "string",
+      "category": "General",
+      "serviceName": "TEZ"
+    },
+    {
+      "id": "site property",
+      "name": "tez.runtime.intermediate-input.compress.codec",
+      "displayName": "tez.runtime.intermediate-input.compress.codec",
+      "displayType": "string",
+      "category": "General",
+      "serviceName": "TEZ"
+    },
+    {
+      "id": "site property",
+      "name": "tez.runtime.intermediate-input.is-compressed",
+      "displayName": "tez.runtime.intermediate-input.is-compressed",
+      "displayType": "checkbox",
+      "category": "General",
+      "serviceName": "TEZ"
+    },
+    {
+      "id": "site property",
+      "name": "tez.runtime.intermediate-output.compress.codec",
+      "displayName": "tez.runtime.intermediate-output.compress.codec",
+      "displayType": "string",
+      "category": "General",
+      "serviceName": "TEZ"
+    },
+    {
+      "id": "site property",
+      "name": "tez.runtime.intermediate-output.should-compress",
+      "displayName": "tez.runtime.intermediate-output.should-compress",
+      "displayType": "checkbox",
+      "category": "General",
+      "serviceName": "TEZ"
+    },
 
   /**********************************************hbase-site***************************************/
     {
@@ -600,6 +704,8 @@ module.exports =
       "id": "site property",
       "name": "storm.local.dir",
       "displayName": "storm.local.dir",
+      "defaultDirectory": "/hadoop/storm",
+      "displayType": "directory",
       "serviceName": "STORM",
       "category": "General"
     },
@@ -1205,25 +1311,8 @@ module.exports =
     },
     {
       "id": "site property",
-      "name": "prism.application.services",
-      "displayName": "prism.application.services",
-      "category": "FalconStartupSite",
-      "serviceName": "FALCON",
-      "filename": "falcon-startup.properties.xml"
-    },
-    {
-      "id": "site property",
       "name": "*.configstore.listeners",
       "displayName": "*.configstore.listeners",
-      "displayType": "multiLine",
-      "category": "FalconStartupSite",
-      "serviceName": "FALCON",
-      "filename": "falcon-startup.properties.xml"
-    },
-    {
-      "id": "site property",
-      "name": "prism.configstore.listeners",
-      "displayName": "prism.configstore.listeners",
       "displayType": "multiLine",
       "category": "FalconStartupSite",
       "serviceName": "FALCON",
@@ -1257,14 +1346,6 @@ module.exports =
       "id": "site property",
       "name": "*.system.lib.location",
       "displayName": "*.system.lib.location",
-      "category": "FalconStartupSite",
-      "serviceName": "FALCON",
-      "filename": "falcon-startup.properties.xml"
-    },
-    {
-      "id": "site property",
-      "name": "prism.system.lib.location",
-      "displayName": "prism.system.lib.location",
       "category": "FalconStartupSite",
       "serviceName": "FALCON",
       "filename": "falcon-startup.properties.xml"
@@ -1559,7 +1640,19 @@ module.exports =
       "filename": "core-site.xml",
       "serviceName": "GLUSTERFS",
       "category": "General"
-    }
+    },
 
+  /********************************************* flume.conf *****************************/
+    {
+      "id": "site property",
+      "serviceName": "FLUME",
+      "showLabel": false,
+      "isRequired": false,
+      "category": "AdvancedFlumeConf",
+      "displayName": "content",
+      "name": "content",
+      "displayType": "custom",
+      "filename": "flume.conf"
+    }
   ]
 };

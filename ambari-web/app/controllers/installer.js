@@ -280,6 +280,7 @@ App.InstallerController = App.WizardController.extend({
               if(repo.Repositories.repo_name == version.Versions.stack_name) {
                 var defaultBaseUrl = repo.Repositories.default_base_url || repo.Repositories.base_url;
                 var latestBaseUrl = repo.Repositories.latest_base_url || defaultBaseUrl;
+                if (!App.supports.ubuntu && os.OperatingSystems.os_type == 'ubuntu12') return; // @todo: remove after Ubuntu support confirmation
                 oses.push({
                   osType: os.OperatingSystems.os_type,
                   baseUrl: latestBaseUrl,
@@ -318,9 +319,14 @@ App.InstallerController = App.WizardController.extend({
   checkServerClientVersion: function () {
     var dfd = $.Deferred();
     var self = this;
-    self.getServerVersion().done(function () {
+    if (App.get('version')) {
+      self.getServerVersion().done(function () {
+        dfd.resolve();
+      });
+    } else {
+      this.set('isServerClientVersionMismatch', false);
       dfd.resolve();
-    });
+    }
     return dfd.promise();
   },
   getServerVersion: function(){

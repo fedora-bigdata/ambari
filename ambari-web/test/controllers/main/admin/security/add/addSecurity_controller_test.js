@@ -18,6 +18,8 @@
 
 
 var App = require('app');
+require('models/host');
+require('mixins/common/localStorage');
 require('controllers/wizard');
 require('controllers/main/admin/security/add/addSecurity_controller');
 require('models/host_component');

@@ -48,7 +48,7 @@
             {{#view App.WizardStep6HostView hostBinding="host" }}
               {{host.hostName}}
               {{#if host.hasMaster}}
-                <i class=icon-asterisks>&#10037</i>
+                <i class=icon-asterisks>&#10037;</i>
               {{/if}}
             {{/view}}
             {{#each checkbox in host.checkboxes}}
@@ -68,6 +68,9 @@
   </div>
     <div id="hosts">
         <div class="page-bar">
+            <div class="items-on-page">
+                <label>{{t common.show}}: {{view view.rowsPerPageSelectView selectionBinding="view.displayLength"}}</label>
+            </div>
             <div class="info">{{view.paginationInfo}}</div>
             <div class="paging_two_button">
               {{view view.paginationFirst}}

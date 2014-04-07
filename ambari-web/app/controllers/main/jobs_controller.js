@@ -47,6 +47,7 @@ App.MainJobsController = Em.Controller.extend({
   }.observes('content.length', 'content.@each.id', 'content.@each.startTime', 'content.@each.endTime', 'sortProperties', 'sortAscending'),
   
   contentAndSortUpdater: function() {
+    this.set('sortingDone', false);
     var content = this.get('content');
     var sortedContent = content.toArray();
     var sortProperty = this.get('sortProperty');
@@ -83,6 +84,7 @@ App.MainJobsController = Em.Controller.extend({
       }
     }
     sortedContent.length = 0;
+    this.set('sortingDone', true);
   },
 
   navIDs: {
@@ -101,6 +103,7 @@ App.MainJobsController = Em.Controller.extend({
   sortingColumn: null,
   sortProperty: 'id',
   sortAscending: true,
+  sortingDone: true,
 
   sortingColumnObserver: function () {
     if(this.get('sortingColumn')){
@@ -115,6 +118,7 @@ App.MainJobsController = Em.Controller.extend({
     this.get('filterObject').set('nextFromId', '');
     this.get('filterObject').set('backFromId', '');
     this.get('filterObject').set('fromTs', '');
+    this.set('hasNewJobs', false);
     this.set('resetPagination', true);
     this.loadJobs();
   },
@@ -358,13 +362,9 @@ App.MainJobsController = Em.Controller.extend({
     var lastReceivedID = data.entities[0].entity;
     if(this.get('lastJobID') == '') {
       this.set('lastJobID', lastReceivedID);
-    } else {
-      if (this.get('lastJobID') !== lastReceivedID) {
-        this.set('lastJobID', lastReceivedID);
-        this.set('hasNewJobs', true);
-      }else{
-        this.set('hasNewJobs', false);
-      }
+    } else if (this.get('lastJobID') !== lastReceivedID) {
+      this.set('lastJobID', lastReceivedID);
+      this.set('hasNewJobs', true);
     }
   },
 
@@ -414,10 +414,10 @@ App.MainJobsController = Em.Controller.extend({
 
   initializePagination: function() {
     var back_link_IDs = this.get('navIDs.backIDs.[]');
-    if(!back_link_IDs.contains(App.HiveJob.find().objectAt(0).get('id'))) {
-      back_link_IDs.push(App.HiveJob.find().objectAt(0).get('id'));
+    if(!back_link_IDs.contains(this.get('lastJobID'))) {
+      back_link_IDs.push(this.get('lastJobID'));
     }
-    this.set('filterObject.backFromId', App.HiveJob.find().objectAt(0).get('id'));
+    this.set('filterObject.backFromId', this.get('lastJobID'));
     this.get('filterObject').set('fromTs', App.get('currentServerTime'));
   },
 

@@ -160,8 +160,6 @@ App.MainJobsView = App.TableView.extend({
         this.set('disabled', false);
       }
     }.observes('parentView.hasBackLinks'),
-    attributeBindings: ['disabled'],
-    disabled: false,
     change: function () {
       this.get('controller').set('navIDs.nextID', '');
       this.get('parentView').saveDisplayLength();
@@ -173,15 +171,10 @@ App.MainJobsView = App.TableView.extend({
    * @returns {String}
    */
   filteredJobs: function () {
-    return Em.I18n.t('jobs.filtered.jobs').format(this.get('controller.content.length'), this.get('controller.totalOfJobs'));
+    return Em.I18n.t('jobs.filtered.jobs').format(this.get('controller.content.length'));
   }.property('controller.content.length', 'controller.totalOfJobs'),
 
   pageContentObserver: function () {
-    if (!$.browser.mozilla) {
-      $('.job-link').on('mouseleave', function() {
-        $('.tooltip').remove();
-      });
-    };
     if (!this.get('controller.loading')) {
       if ($('.tooltip').length) {
         Ember.run.later(this, function() {
@@ -243,19 +236,20 @@ App.MainJobsView = App.TableView.extend({
 
   jobNameView: Em.View.extend({
     classNames: ['job-link'],
+    tagName: 'a',
+    classNameBindings: ['isLink'],
+    attributeBindings: ['rel', 'job.queryText:data-original-title', 'href'],
     rel: 'tooltip',
     href: '#',
-    template: Ember.Handlebars.compile('{{job.name}}'),
-    attributeBindings: function () {
-      var attributes = ['rel', 'job.queryText:data-original-title'];
+    isLink: 'is-not-link',
+    isLinkObserver: function () {
       if (this.get('job.hasTezDag')) {
-        attributes.push('href');
-      };
-      return attributes;
-    }.property('job.hasTezDag'),
-    tagName: function () {
-      return this.get('job.hasTezDag') ? 'a' : 'span';
-    }.property('job.hasTezDag'),
+        this.set('isLink', "");
+      }else{
+        this.set('isLink', "is-not-link");
+      }
+    }.observes('controller.sortingDone'),
+    template: Ember.Handlebars.compile('{{job.name}}'),
     click: function(event) {
       if (this.get('job.hasTezDag')) {
         App.router.transitionTo('main.jobs.jobDetails', this.get('job'));
